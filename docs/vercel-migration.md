@@ -45,9 +45,15 @@ https://qyhlkxdshylsfikworzp.supabase.co/auth/v1/callback
 Save its Client ID and Client Secret in the Google provider in Supabase Auth. Keep nonce checks enabled. The login requests only identity scopes; Calendar and Sheets continue to use their existing separate consent flows. The exact application callback is registered in Supabase Redirect URLs.
 
 ```text
-https://people-atlas-japhetajoshua-5075.vercel.app/auth/callback
+https://mypeople.com.ng/auth/callback
 ```
 
 APP_URL must equal the production origin. Enable GOOGLE_AUTH_ENABLED=true in Vercel and redeploy only after provider configuration is saved. Until then the button is disabled and its route returns a safe sign-in error. Code exchange uses the Supabase SSR PKCE verifier cookie and sends the user to the workspace on the configured origin. Redirect parameters from the browser are ignored. Google credentials belong in Supabase, never in GitHub or public environment variables.
 
 After enabling the provider, verify the entire Google consent and callback flow, profile persistence, logout and a second account's isolation. Google sign-in does not transfer old Sites records or guest data. Supabase handles identity linking for verified email identities. Do not implement account linking using client-supplied emails.
+
+## Custom domain
+
+mypeople.com.ng is attached to the production Vercel project. Its apex A records match Vercel's recommendations, and a renewable HTTPS certificate was issued. The homepage loaded correctly over HTTPS. APP_URL and Supabase Site URL use https://mypeople.com.ng. Its exact /auth/callback URL is allowlisted. Login requests from older Vercel hostnames reach the canonical login page before creating a PKCE verifier so the cookie belongs to the correct domain.
+
+Use https://mypeople.com.ng as the Google OAuth authorized JavaScript origin. The Google authorized redirect URI remains https://qyhlkxdshylsfikworzp.supabase.co/auth/v1/callback. Google provider activation still requires its Client ID and Client Secret.

@@ -1,3 +1,7 @@
+## Custom domain — 3 November 2026
+
+mypeople.com.ng has the recommended apex DNS records, is verified on the People Atlas Vercel project, and has an auto-renewing TLS certificate. The homepage and login page loaded correctly over HTTPS. Supabase Site URL and its callback allowlist use the new origin; APP_URL in Vercel is updated. The Google provider still needs OAuth credentials. The canonical-host regression passes alongside all 56 tests.
+
 ## Google sign-in integration — 3 November 2026
 
 Added a separate Google login form, server-side PKCE initiation and code-exchange callback. Redirects use APP_URL and ignore client-supplied destinations. Six new regression tests cover the fixed callback, cross-origin request rejection, OAuth failure, callback denial and code errors, invalid origins and the disabled-provider guard. All 55 tests, TypeScript, focused lint and the clean native production build passed.

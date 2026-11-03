@@ -15,7 +15,7 @@ test('Google authorization uses a fixed callback and rejects cross-site form sub
   return {data:{url:'https://project.supabase.co/auth/v1/authorize?provider=google'},error:null};
  };
  const route=f.load('app/auth/google/route.ts');
- const r=await route.POST(new Request('https://attacker.example/auth/google',{method:'POST'}));
+ const r=await route.POST(new Request('https://atlas.example/auth/google',{method:'POST'}));
  assert.equal(r.status,303);assert.match(r.headers.get('location'),/^https:\/\/project.supabase.co/);
  assert.equal(r.headers.get('cache-control'),'no-store');
  assert.equal((await route.POST(new Request('https://atlas.example/auth/google',{method:'POST',headers:{Origin:'https://attacker.example'}}))).status,403);
@@ -60,4 +60,12 @@ test('unconfigured Google login never sends visitors to an unavailable provider'
  f.auth.signInWithOAuth=async()=>assert.fail('Disabled provider was used');
  const response=await f.load('app/auth/google/route.ts').POST(new Request('https://atlas.example/auth/google',{method:'POST'}));
  assert.equal(response.headers.get('location'),'https://atlas.example/login?status=google');
+});
+
+test('login from an old hostname reaches the canonical host before creating a PKCE verifier',async()=>{
+ const f=setup();
+ f.auth.signInWithOAuth=async()=>assert.fail('A verifier must not be created on another host');
+ const response=await f.load('app/auth/google/route.ts').POST(new Request('https://old.example/auth/google',{method:'POST',headers:{Origin:'https://old.example'}}));
+ assert.equal(response.status,303);
+ assert.equal(response.headers.get('location'),'https://atlas.example/login');
 });

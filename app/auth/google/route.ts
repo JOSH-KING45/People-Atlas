@@ -6,6 +6,11 @@ export async function POST(request:Request) {
   return api(async()=>{
     guard(request);
     const origin = authOrigin();
+    if (new URL(request.url).origin !== origin) {
+      return new Response(null,{status:303,headers:{
+        Location:origin + '/login','Cache-Control':'no-store','Referrer-Policy':'no-referrer'
+      }});
+    }
     let target = origin + '/login?status=google';
     if (process.env.GOOGLE_AUTH_ENABLED === 'true') try {
       const client = await sessionClient();
