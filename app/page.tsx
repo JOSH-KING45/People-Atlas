@@ -1,3 +1,4 @@
+import {googleConnection} from '@/lib/google-config';
 import {LockKeyhole,Network,ArrowRight,UserRound} from 'lucide-react';
 import {currentUser} from './account';
 import PeopleWorkspace from './people-workspace';
@@ -8,7 +9,7 @@ export default async function Home(){
   const user = await currentUser();
   const signInHref = '/login';
 
-  if(user) return <PeopleWorkspace signInHref={signInHref} tourScope={user.id}/>;
+  if(user) return <PeopleWorkspace signInHref={signInHref} tourScope={user.id} appGoogleClientId={googleConnection().googleClientId}/>;
 
   return <main className="sign-in-page">
     <section className="sign-in-card" aria-labelledby="sign-in-title">

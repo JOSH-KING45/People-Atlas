@@ -1,3 +1,9 @@
+## Shared Google configuration — 3 November 2026
+
+Calendar and Sheets now share the production Google web client ID for guest and authenticated visitors. Users no longer enter client IDs when shared configuration is present. Connections instead explains per-account Google permissions. Existing saved client settings remain as a fallback. The settings API rejects attempts to override the app-wide client and does not overwrite existing personal client settings.
+
+All 59 tests, TypeScript, focused lint and a clean production webpack build passed. The people GET handler signature now matches Next.js route types. Supabase reports Google enabled, but its authorization endpoint reports a missing OAuth secret. GOOGLE_AUTH_ENABLED remains false until the owner saves the OAuth client secret. Calendar/Sheets scopes continue to require each user's explicit Google authorization, with tokens held in memory for the page session. Live consent, API enablement and data-access checks remain pending.
+
 ## Custom domain — 3 November 2026
 
 mypeople.com.ng has the recommended apex DNS records, is verified on the People Atlas Vercel project, and has an auto-renewing TLS certificate. The homepage and login page loaded correctly over HTTPS. Supabase Site URL and its callback allowlist use the new origin; APP_URL in Vercel is updated. The Google provider still needs OAuth credentials. The canonical-host regression passes alongside all 56 tests.

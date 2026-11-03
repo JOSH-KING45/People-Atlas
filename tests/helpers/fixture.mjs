@@ -24,6 +24,7 @@ export function fixture(initialHeaders = {}){
     'next/navigation':{redirect:(url)=>{throw new Error(`Redirect: ${url}`)}},
     '@/lib/supabase':services, './supabase':services,
     './people-workspace':{default:Workspace,__esModule:true},
+    '../people-workspace':{default:Workspace,__esModule:true},
   };
   function load(relative){
     const path = resolve(root,relative);

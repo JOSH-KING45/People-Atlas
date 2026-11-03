@@ -57,3 +57,9 @@ After enabling the provider, verify the entire Google consent and callback flow,
 mypeople.com.ng is attached to the production Vercel project. Its apex A records match Vercel's recommendations, and a renewable HTTPS certificate was issued. The homepage loaded correctly over HTTPS. APP_URL and Supabase Site URL use https://mypeople.com.ng. Its exact /auth/callback URL is allowlisted. Login requests from older Vercel hostnames reach the canonical login page before creating a PKCE verifier so the cookie belongs to the correct domain.
 
 Use https://mypeople.com.ng as the Google OAuth authorized JavaScript origin. The Google authorized redirect URI remains https://qyhlkxdshylsfikworzp.supabase.co/auth/v1/callback. Google provider activation still requires its Client ID and Client Secret.
+
+## Shared Calendar and Sheets configuration
+
+Set GOOGLE_CLIENT_ID in Vercel to the public web client ID used by the Google provider. This app-wide value is supplied to both guest and authenticated workspaces. Users do not create OAuth clients or enter client IDs. Connections shows permission guidance instead of credential setup. Existing personal settings remain as a fallback when no shared ID is configured.
+
+Enable Google Calendar API and Google Sheets API in that client's Google Cloud project and authorize https://mypeople.com.ng as a JavaScript origin. Each user must still approve access to their own Google data when sending birthdays or importing a sheet. Access tokens remain in memory for the current page session. Reloading, expiry, revocation or additional scopes can require authorization again. Calendar/Sheets consent is separate from login and guests keep their browser-local records.

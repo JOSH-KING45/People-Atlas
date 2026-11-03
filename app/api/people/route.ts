@@ -6,7 +6,7 @@ import {z} from 'zod';
 const personSchema=z.object({id:z.string().uuid(),name:z.string().trim().min(1).max(200),fields:z.record(z.string().trim().min(1).max(80),z.string().max(2000)).refine(v=>Object.keys(v).length<=100),notes:z.string().max(60000),version:z.number().int().positive().optional()});
 type ProfileRow = {id:string;name:string;fields:Record<string,string>;notes:string;created_at:string;updated_at:string;version:number};
 function unpack(r:ProfileRow){return{id:r.id,name:r.name,fields:r.fields,notes:r.notes,createdAt:r.created_at,updatedAt:r.updated_at,version:r.version}}
-export function GET(request?:Request){return api(async()=>{
+export function GET(request:Request){return api(async()=>{
  const u=await owner(),cursor=afterId(request);
  let query=adminClient().from('people').select('*').eq('owner',u).order('id').limit(pageSize+1);
  if(cursor)query=query.gt('id',cursor);
