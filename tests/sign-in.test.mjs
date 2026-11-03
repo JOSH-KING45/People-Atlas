@@ -1,0 +1,176 @@
+// Run: node --test tests/sign-in.test.mjs
+// Infrastructure is mocked; these checks do not establish a real SIWC session.
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {fixture} from './helpers/fixture.mjs';
+
+test('anonymous visitors get a working top-level sign-in link before the workspace loads',async()=>{
+  const {load} = fixture();
+  const page = load('app/page.tsx');
+  assert.equal(page.dynamic,'force-dynamic');
+  const markup = renderToStaticMarkup(await page.default());
+  assert.match(markup,/<a[^>]+href="\/signin-with-chatgpt\?return_to=%2F"[^>]+target="_top"/);
+  assert.match(markup,/Sign in with ChatGPT/);
+  assert.match(markup,/<a[^>]+href="\/guest"[^>]*>.*Continue as guest/);
+  assert.match(markup,/Guest data stays in this browser/);
+  assert.doesNotMatch(markup,/Connection issue|Add a little context/);
+});
+
+test('recognized identity opens the workspace and uses the stable ID for ownership',async()=>{
+  const f = fixture({'oai-authenticated-user-id':'test-user-a','oai-authenticated-user-email':'a@example.test'});
+  assert.equal((await f.load('app/page.tsx').default()).type,f.Workspace);
+  const server = f.load('lib/server.ts');
+  assert.equal(await server.owner(),'test-user-a');
+  f.setHeaders({'oai-authenticated-user-id':'test-user-b','oai-authenticated-user-email':'b@example.test'});
+  assert.equal(await server.owner(),'test-user-b');
+});
+
+test('absent or partial identity cannot access any saved-data endpoint',async()=>{
+  const f = fixture();
+  Object.defineProperty(f.env,'DB',{get:()=>{assert.fail('Unauthenticated request reached the database')}});
+  Object.defineProperty(f.env,'BUCKET',{get:()=>{assert.fail('Unauthenticated request reached file storage')}});
+  for(const headers of [{},{'oai-authenticated-user-email':'a@example.test'},{'oai-authenticated-user-id':'test-user-a'}]){
+    f.setHeaders(headers);
+    for(const name of ['people','settings','sources']){
+      const route = f.load(`app/api/${name}/route.ts`);
+      for(const method of ['GET','POST','DELETE'].filter(method=>method in route)){
+        const response = await route[method](new Request(`https://example.test/api/${name}`,{method}));
+        assert.equal(response.status,401,`${method} ${name}`);
+        assert.equal(response.headers.get('cache-control'),'no-store');
+        assert.match((await response.json()).error,/Sign in with ChatGPT/);
+      }
+    }
+  }
+});
+
+test('sign-in destinations remain on the site and cannot loop through reserved auth routes',()=>{
+  const {chatGPTSignInPath} = fixture().load('app/chatgpt-auth.ts');
+  for(const path of ['https://example.test','//example.test','/signin-with-chatgpt','/callback?code=test','/signout-with-chatgpt']){
+    assert.equal(chatGPTSignInPath(path),'/signin-with-chatgpt?return_to=%2F');
+  }
+  assert.equal(chatGPTSignInPath('/?view=people'),'/signin-with-chatgpt?return_to=%2F%3Fview%3Dpeople');
+});
+
+test('the client classifies JSON and HTML 401 responses as sign-in failures',async(t)=>{
+  const {apiRequest,isSignInError} = fixture().load('lib/api-client.ts');
+  for(const content of ['{"error":"Unauthorized"}','<html>Sign in</html>']){
+    const mock = t.mock.method(globalThis,'fetch',async(_url,options)=>{
+      assert.equal(options.credentials,'same-origin');
+      return new Response(content,{status:401});
+    });
+    await assert.rejects(apiRequest('/api/people'),error=>isSignInError(error)&&/Sign in with ChatGPT/.test(error.message));
+    mock.mock.restore();
+  }
+});
+
+test('network and service failures do not prompt users to sign in',async(t)=>{
+  const {apiRequest,isSignInError} = fixture().load('lib/api-client.ts');
+  const mock = t.mock.method(globalThis,'fetch',async()=>Response.json({error:'Database unavailable'},{status:503}));
+  await assert.rejects(apiRequest('/api/people'),error=>!isSignInError(error)&&error.status===503&&error.message==='Database unavailable');
+  mock.mock.mockImplementation(async()=>{throw new TypeError('Failed to fetch')});
+  await assert.rejects(apiRequest('/api/people'),error=>!isSignInError(error));
+});
+
+
+test('provider requests use only the selected official endpoint and never follow redirects',()=>{
+ const f=fixture();const {createAiRequest}=f.load('lib/ai-extraction.ts');
+ const expected={openai:'https://api.openai.com/v1/responses',gemini:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',groq:'https://api.groq.com/openai/v1/chat/completions',openrouter:'https://openrouter.ai/api/v1/chat/completions'};
+ for(const [provider,url] of Object.entries(expected)){
+  const r=createAiRequest(provider,'test-key-'+provider,'test/model:free','Sample note');
+  assert.equal(r.url,url);assert.equal(r.options.redirect,'manual');
+  assert.equal(r.options.headers.Authorization,'Bearer test-key-'+provider);
+  const body=JSON.parse(r.options.body);assert.equal(body.model,'test/model:free');
+  if(provider==='openai'){assert.equal(body.store,false);assert.equal(body.input,'Sample note')}
+  else{assert.equal(body.messages[1].content,'Sample note');assert.equal(body.response_format.type,provider==='gemini'?'json_schema':'json_object')}
+ }
+});
+
+test('provider results normalize correctly and incomplete or rejected responses never become drafts',async(t)=>{
+ const {extractWithAi}=fixture().load('lib/ai-extraction.ts');
+ const output=JSON.stringify({people:[]});
+ const mock=t.mock.method(globalThis,'fetch',async()=>Response.json({choices:[{finish_reason:'stop',message:{content:output}}]}));
+ for(const provider of ['gemini','groq','openrouter'])assert.deepEqual(await extractWithAi(provider,'test-key','test-model','note'),{output,model:'test-model'});
+ mock.mock.mockImplementation(async()=>Response.json({status:'completed',output:[{content:[{type:'output_text',text:output}]}]}));
+ assert.deepEqual(await extractWithAi('openai','test-key','test-model','note'),{output,model:'test-model'});
+ mock.mock.mockImplementation(async()=>Response.json({choices:[{finish_reason:'length',message:{content:output}}]}));
+ await assert.rejects(extractWithAi('groq','test-key','test-model','note'),e=>e.status===422);
+ mock.mock.mockImplementation(async()=>Response.json({error:'test-key'},{status:401}));
+ await assert.rejects(extractWithAi('gemini','test-key','test-model','note'),e=>e.status===400&&!e.message.includes('test-key'));
+ await assert.rejects(extractWithAi('https://example.test','test-key','test-model','note'),e=>e.status===400);
+});
+
+test('switching providers requires a new key and stores provider and encrypted key together',async()=>{
+ const f=fixture({'oai-authenticated-user-id':'test-user-a','oai-authenticated-user-email':'a@example.test'});
+ f.env.SETTINGS_ENCRYPTION_KEY=Buffer.alloc(32,7).toString('base64');
+ let saved;
+ f.env.DB={prepare:()=>({bind:(...values)=>({first:async()=>({google_client_id:'',encrypted_ai_key:'old-ciphertext',ai_model:'gpt-4.1-mini',ai_provider:'openai'}),run:async()=>{saved=values}})})};
+ const {POST}=f.load('app/api/settings/route.ts');
+ const request=(input)=>new Request('https://example.test/api/settings',{method:'POST',body:JSON.stringify(input)});
+ let response=await POST(request({aiProvider:'openrouter',aiModel:'provider/model:free'}));
+ assert.equal(response.status,400);assert.equal(saved,undefined);
+ response=await POST(request({aiProvider:'openrouter',aiModel:'provider/model:free',aiKey:'new-test-key'}));
+ assert.equal(response.status,200);assert.equal(saved[0],'test-user-a');assert.equal(saved[4],'openrouter');
+ assert.notEqual(saved[2],'new-test-key');assert.notEqual(saved[2],'old-ciphertext');
+ assert.equal(await f.load('lib/server.ts').decrypt(saved[2]),'new-test-key');
+ const result=await response.json();assert.equal(result.aiProvider,'openrouter');assert.equal(result.hasAiKey,true);assert.ok(!JSON.stringify(result).includes('new-test-key'));
+});
+
+
+test('the recommended free route requires structured output and zero-cost providers',()=>{
+ const f=fixture();const {createAiRequest}=f.load('lib/ai-extraction.ts');
+ const {AI_PROVIDERS,RECOMMENDED_OPENROUTER_MODEL}=f.load('lib/ai-providers.ts');
+ assert.equal(AI_PROVIDERS.openrouter.defaultModel,'openrouter/free');
+ const request=createAiRequest('openrouter','fake-key',RECOMMENDED_OPENROUTER_MODEL,'Example note');
+ const body=JSON.parse(request.options.body);
+ assert.equal(body.model,'openrouter/free');assert.equal(body.response_format.type,'json_schema');
+ assert.equal(body.response_format.json_schema.strict,true);
+ assert.deepEqual(body.response_format.json_schema.schema.required,['people']);
+ assert.equal(body.provider.require_parameters,true);
+ assert.deepEqual(body.provider.max_price,{prompt:0,completion:0,request:0});
+ assert.equal(body.models,undefined,'No paid model fallback may be added');
+ const pinned=JSON.parse(createAiRequest('openrouter','fake-key','example/model:free','note').options.body);
+ assert.deepEqual(pinned.provider.max_price,{prompt:0,completion:0,request:0});
+ const custom=JSON.parse(createAiRequest('openrouter','fake-key','example/paid-model','note').options.body);
+ assert.equal(custom.model,'example/paid-model');assert.equal(custom.provider.max_price,undefined);
+});
+
+test('OpenRouter errors distinguish free limits, unavailable models, and account issues without leaking upstream text',async(t)=>{
+ const {extractWithAi}=fixture().load('lib/ai-extraction.ts');
+ const responses=[
+  [429,429,/usage or rate limit/],
+  [503,503,/temporarily unavailable or busy/],
+  [404,503,/No available OpenRouter provider/],
+  [402,400,/account balance or key spending-limit/],
+  [401,400,/rejected the key/],
+ ];
+ const fetch=t.mock.method(globalThis,'fetch');
+ for(const [upstream,status,message] of responses){
+  fetch.mock.mockImplementation(async()=>Response.json({error:{code:upstream,message:'private-key-and-note'}},{status:upstream}));
+  await assert.rejects(extractWithAi('openrouter','fake-key','openrouter/free','note'),e=>e.status===status&&message.test(e.message)&&!e.message.includes('private-key-and-note'));
+ }
+ fetch.mock.mockImplementation(async()=>Response.json({error:{code:429,message:'private-key-and-note'}}));
+ await assert.rejects(extractWithAi('openrouter','fake-key','openrouter/free','note'),e=>e.status===429&&!e.message.includes('private-key-and-note'));
+});
+
+test('free extraction returns the actual model for review and rejects invalid or partial profiles without saving',async(t)=>{
+ const f=fixture({'oai-authenticated-user-id':'test-user-a','oai-authenticated-user-email':'a@example.test'});
+ f.env.SETTINGS_ENCRYPTION_KEY=Buffer.alloc(32,7).toString('base64');
+ const key=await f.load('lib/server.ts').encrypt('fake-key');
+ f.env.DB={prepare:(sql)=>{
+  assert.match(sql,/^SELECT .* FROM settings WHERE owner=\?$/);
+  return {bind:(owner)=>{assert.equal(owner,'test-user-a');return {first:async()=>({encrypted_ai_key:key,google_client_id:'',ai_provider:'openrouter',ai_model:'openrouter/free'})}}};
+ }};
+ const {POST}=f.load('app/api/extract/route.ts');
+ const note='Fictional Zara is 19 and lives in Abuja.';
+ const input=()=>new Request('https://example.test/api/extract',{method:'POST',body:JSON.stringify({text:note,mode:'ai'})});
+ const responseBody=(people,finish='stop')=>({model:'example/actual-free-model:free',choices:[{finish_reason:finish,message:{content:JSON.stringify({people})}}]});
+ const fetch=t.mock.method(globalThis,'fetch',async()=>Response.json(responseBody([{name:'Fictional Zara',fields:[{label:'Age',value:'19'}],sourceNote:note}])));
+ const result=await POST(input());assert.equal(result.status,200);
+ const data=await result.json();assert.equal(data.people[0].fields.Age,'19');assert.equal(data.people[0].notes,note);
+ assert.equal(data.aiModel,'example/actual-free-model:free');assert.match(data.notice,/example\/actual-free-model:free/);
+ fetch.mock.mockImplementation(async()=>Response.json(responseBody([{name:'Fictional Zara',fields:'invalid',sourceNote:note}])));
+ assert.equal((await POST(input())).status,422);
+ fetch.mock.mockImplementation(async()=>Response.json(responseBody([],'length')));
+ assert.equal((await POST(input())).status,422);
+});

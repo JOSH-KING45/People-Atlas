@@ -1,0 +1,1 @@
+ALTER TABLE `settings` ADD `ai_provider` text DEFAULT 'openai' NOT NULL;

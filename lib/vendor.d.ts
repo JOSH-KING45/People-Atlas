@@ -1,0 +1,1 @@
+declare module 'mammoth/mammoth.browser.js' {export default mammoth;const mammoth:{extractRawText:typeof extractRawText};export function extractRawText(input:{arrayBuffer:ArrayBuffer}):Promise<{value:string;messages:unknown[]}>}
