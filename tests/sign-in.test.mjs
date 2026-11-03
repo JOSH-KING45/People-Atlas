@@ -20,7 +20,14 @@ test('anonymous visitors get a working top-level sign-in link on the landing pag
 
 test('recognized identity opens the workspace and uses the stable ID for ownership',async()=>{
   const f = fixture({'fixture-session-id':'test-user-a','fixture-email':'a@example.test'});
-  assert.equal((await f.load('app/page.tsx').default()).type,f.Workspace);
+  const home=await f.load('app/page.tsx').default();
+  assert.equal(home.props.signedIn,true);
+  assert.notEqual(home.type,f.Workspace);
+  assert.equal((await f.load('app/atlas/page.tsx').default()).type,f.Workspace);
+  const markup=renderToStaticMarkup(home);
+  assert.match(markup,/Continue to Atlas/);
+  assert.match(markup,/Stay on this page/);
+  assert.match(markup,/href="\/atlas"/);
   const server = f.load('lib/server.ts');
   assert.equal(await server.owner(),'test-user-a');
   f.setHeaders({'fixture-session-id':'test-user-b','fixture-email':'b@example.test'});
@@ -168,4 +175,12 @@ test('free extraction returns the actual model for review and rejects invalid or
  assert.equal((await POST(input())).status,422);
  fetch.mock.mockImplementation(async()=>Response.json(responseBody([],'length')));
  assert.equal((await POST(input())).status,422);
+});
+
+test('the Atlas workspace redirects anonymous and forged identities to login',async()=>{
+ for(const headers of [{},{'oai-authenticated-user-id':'forged'}]){
+  const f=fixture(headers);
+  await assert.rejects(f.load('app/atlas/page.tsx').default(),/Redirect: \/login/);
+  assert.equal((await f.load('app/page.tsx').default()).props.signedIn,false);
+ }
 });

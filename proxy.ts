@@ -15,4 +15,4 @@ export async function proxy(request:NextRequest) {
   await client.auth.getUser();
   return response;
 }
-export const config={matcher:['/','/login','/api/people','/api/settings','/api/sources','/api/extract']};
+export const config={matcher:['/','/atlas','/login','/api/people','/api/settings','/api/sources','/api/extract']};

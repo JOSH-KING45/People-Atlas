@@ -1,13 +1,15 @@
 import {ArrowRight, CalendarDays, Check, FileText, FolderOpen, LockKeyhole, Network, Search, Sparkles, UserRound, Users} from 'lucide-react';
 import Link from 'next/link';
+import ContinuePrompt from './continue-prompt';
 import styles from './landing.module.css';
 
-export default function Landing(){
+export default function Landing({signedIn=false}:{signedIn?:boolean}){
  return <div className={styles.page}>
+  {signedIn&&<ContinuePrompt/>}
   <a className={styles.skip} href="#main">Skip to content</a>
   <header className={styles.header}>
    <Link className={styles.brand} href="/" aria-label="People Atlas home"><span><Network size={22} aria-hidden="true"/></span>People Atlas</Link>
-   <nav aria-label="Main navigation"><a className={styles.featuresLink} href="#how-it-works">How it works</a><a href="/login">Sign in</a><a className={styles.smallCta} href="/guest">Try it free <ArrowRight size={16} aria-hidden="true"/></a></nav>
+   <nav aria-label="Main navigation"><a className={styles.featuresLink} href="#how-it-works">How it works</a><a href={signedIn?"/atlas":"/login"}>{signedIn?"Open Atlas":"Sign in"}</a><a className={styles.smallCta} href="/guest">Try it free <ArrowRight size={16} aria-hidden="true"/></a></nav>
   </header>
   <main id="main">
    <section className={styles.hero} aria-labelledby="hero-title">
@@ -15,7 +17,7 @@ export default function Landing(){
      <p className={styles.eyebrow}><span/> A little more thoughtful. A lot more connected.</p>
      <h1 id="hero-title">The people matter.<br/><em>Remember the details.</em></h1>
      <p className={styles.lead}>A personal notebook for the people in your life. Turn scattered notes into thoughtful profiles, keep memories close, and make room for the details that make someone them.</p>
-     <div className={styles.actions}><a className={styles.primary} href="/guest">Start your people notebook <ArrowRight size={18} aria-hidden="true"/></a><a className={styles.secondary} href="/login">Create an account</a></div>
+     <div className={styles.actions}><a className={styles.primary} href={signedIn?"/atlas":"/guest"}>{signedIn?"Continue to Atlas":"Start your people notebook"} <ArrowRight size={18} aria-hidden="true"/></a><a className={styles.secondary} href={signedIn?"/guest":"/login"}>{signedIn?"Explore as a guest":"Create an account"}</a></div>
      <p className={styles.micro}><Check size={15} aria-hidden="true"/> Try guest mode without signing up</p>
     </div>
     <div className={styles.preview} aria-label="Illustrative example of turning a note into a profile">

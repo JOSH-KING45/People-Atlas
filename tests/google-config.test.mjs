@@ -24,7 +24,7 @@ test('authenticated settings use shared Google client IDs and cannot overwrite t
 
 test('guest and signed-in workspaces receive the same public Google configuration',async()=>{
  const f=fixture(identity);f.env.GOOGLE_CLIENT_ID=shared;f.env.GOOGLE_CLIENT_SECRET='must-not-be-passed-to-client';
- const signedIn=await f.load('app/page.tsx').default();
+ const signedIn=await f.load('app/atlas/page.tsx').default();
  const guest=f.load('app/guest/page.tsx').default();
  for(const page of [signedIn,guest]){
   assert.equal(page.props.appGoogleClientId,shared);
