@@ -1,4 +1,4 @@
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {resolve,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -38,7 +38,8 @@ export function fixture(initialHeaders = {}){
     const requireSource = (specifier) => {
       if(specifier in replacements) return replacements[specifier];
       if(specifier.startsWith('@/')) return load(`${specifier.slice(2)}.ts`);
-      if(specifier.startsWith('.')) return load(resolve(dirname(path),`${specifier}.ts`));
+      if(specifier.endsWith('.module.css')) return {};
+      if(specifier.startsWith('.')) {const base=resolve(dirname(path),specifier);return load(existsSync(`${base}.tsx`)?`${base}.tsx`:`${base}.ts`);}
       return nativeRequire(specifier);
     };
     new Function('require','module','exports','process',output)(requireSource,loadedModule,loadedModule.exports,{env});

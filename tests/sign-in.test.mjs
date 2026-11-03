@@ -5,15 +5,16 @@ import test from 'node:test';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {fixture} from './helpers/fixture.mjs';
 
-test('anonymous visitors get a working top-level sign-in link before the workspace loads',async()=>{
+test('anonymous visitors get a working top-level sign-in link on the landing page before the workspace loads',async()=>{
   const {load} = fixture();
   const page = load('app/page.tsx');
   assert.equal(page.dynamic,'force-dynamic');
   const markup = renderToStaticMarkup(await page.default());
-  assert.match(markup,/<a[^>]+href="\/login"[^>]+target="_top"/);
-  assert.match(markup,/Sign in with email/);
-  assert.match(markup,/<a[^>]+href="\/guest"[^>]*>.*Continue as guest/);
-  assert.match(markup,/Guest data stays in this browser/);
+  assert.match(markup,/<a[^>]+href="\/login"/);
+  assert.match(markup,/Create an account/);
+  assert.match(markup,/<a[^>]+href="\/guest"[^>]*>.*Start your people notebook/);
+  assert.match(markup,/Guest mode stores profiles locally on this device/);
+  assert.match(markup,/fictional example/);
   assert.doesNotMatch(markup,/Connection issue|Add a little context/);
 });
 
