@@ -50,7 +50,7 @@ export async function guestApiRequest(url:string,options?:RequestInit){
   const input=body(options);const value={...DEFAULT_SETTINGS,googleClientId:typeof input.googleClientId==='string'?input.googleClientId.trim():'',hasAiKey:false};await transaction<void>('settings','readwrite',(store,finish,fail)=>requestResult(store.put({key:'config',value}),()=>finish(),fail));return value;
  }
  if(endpoint.pathname==='/api/extract'&&method==='POST'){
-  const input=body(options);if(input.mode==='ai')throw new Error('AI extraction needs an account. Sign in with ChatGPT, then add your API key in Connections.');const people=parseText(String(input.text||''));return{people,mode:'built-in',notice:'Built-in extraction runs on this device. Review every field before saving.'};
+  const input=body(options);if(input.mode==='ai')throw new Error('AI extraction needs an account. Sign in with email, then add your API key in Connections.');const people=parseText(String(input.text||''));return{people,mode:'built-in',notice:'Built-in extraction runs on this device. Review every field before saving.'};
  }
  throw new Error('This feature is unavailable in guest mode.');
 }

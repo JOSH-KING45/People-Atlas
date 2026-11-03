@@ -5,13 +5,13 @@ const result={model:'test/free-model',choices:[{finish_reason:'stop',message:{co
 const request=(path,value,headers={})=>new Request('https://example.test'+path,{method:'POST',headers,body:JSON.stringify(value)});
 test('anonymous visitors use included AI with a server-only key and fixed free route',async t=>{
  const f=fixture();f.env.SHARED_OPENROUTER_API_KEY='server-only-test-key';
- Object.defineProperty(f.env,'DB',{get:()=>assert.fail('Guest extraction must not read account data')});
+ Object.defineProperty(f.client,'from',{get:()=>assert.fail('Guest extraction must not read account data')});
  t.mock.method(globalThis,'fetch',async(url,options)=>{assert.equal(url,'https://openrouter.ai/api/v1/chat/completions');assert.equal(options.headers.Authorization,'Bearer server-only-test-key');const body=JSON.parse(options.body);assert.equal(body.model,'openrouter/free');assert.deepEqual(body.provider.max_price,{prompt:0,completion:0,request:0});return Response.json(result)});
  const r=await f.load('app/api/guest-extract/route.ts').POST(request('/api/guest-extract',{text:'Test Alex is 22.',model:'paid-model',provider:'unknown'}));assert.equal(r.status,200);const data=await r.json();assert.equal(data.people[0].name,'Test Alex');assert.doesNotMatch(JSON.stringify(data),/server-only-test-key/);
  const status=await f.load('app/api/ai-status/route.ts').GET();assert.deepEqual(await status.json(),{sharedAiAvailable:true});
 });
 test('signed-in users without personal keys use included AI while ownership remains required',async t=>{
- const f=fixture({'oai-authenticated-user-id':'test-user','oai-authenticated-user-email':'user@example.test'});f.env.SHARED_OPENROUTER_API_KEY='shared-test';f.env.DB={prepare:()=>({bind:()=>({first:async()=>null})})};t.mock.method(globalThis,'fetch',async()=>Response.json(result));
+ const f=fixture({'fixture-session-id':'test-user','fixture-email':'user@example.test'});f.env.SHARED_OPENROUTER_API_KEY='shared-test';t.mock.method(globalThis,'fetch',async()=>Response.json(result));
  const route=f.load('app/api/extract/route.ts');const r=await route.POST(request('/api/extract',{text:'Test Alex is 22.',mode:'ai'}));assert.equal(r.status,200);
  f.setHeaders({});assert.equal((await route.POST(request('/api/extract',{text:'Test',mode:'ai'}))).status,401);
 });

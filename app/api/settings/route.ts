@@ -1,4 +1,5 @@
-import {api,body,db,json,owner,userSettings,encrypt,ApiError} from '@/lib/server';
+import {adminClient} from '@/lib/supabase';
+import {api,body,json,owner,userSettings,encrypt,ApiError} from '@/lib/server';
 import {isAiProvider} from '@/lib/ai-providers';
 export function GET(){return api(async()=>{
  const s=await userSettings(await owner());
@@ -19,6 +20,7 @@ export function POST(request:Request){return api(async()=>{
  if(provider!==old.ai_provider&&!suppliedKey&&input.removeAiKey!==true)throw new ApiError(400,'Enter an API key for the new provider before saving.');
  let key=old.encrypted_ai_key;
  if(input.removeAiKey===true)key='';else if(suppliedKey)key=await encrypt(suppliedKey);
- await db().prepare('INSERT INTO settings(owner,google_client_id,encrypted_ai_key,ai_model,ai_provider) VALUES(?,?,?,?,?) ON CONFLICT(owner) DO UPDATE SET google_client_id=excluded.google_client_id,encrypted_ai_key=excluded.encrypted_ai_key,ai_model=excluded.ai_model,ai_provider=excluded.ai_provider').bind(u,google,key,model,provider).run();
+ const {error}=await adminClient().from('settings').upsert({owner:u,google_client_id:google,encrypted_ai_key:key,ai_model:model,ai_provider:provider});
+ if(error) throw error;
  return json({googleClientId:google,hasAiKey:!!key,aiModel:model,aiProvider:provider});
 })}

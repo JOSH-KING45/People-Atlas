@@ -1,43 +1,32 @@
-// Uses the installed Workers runtime with a local upstream service, no live keys or network.
 import assert from 'node:assert/strict';
-import {mkdtempSync,readFileSync,rmSync,writeFileSync} from 'node:fs';
-import {createRequire} from 'node:module';
-import {tmpdir} from 'node:os';
-import {dirname,join,resolve} from 'node:path';
-import {spawnSync} from 'node:child_process';
-import {fileURLToPath} from 'node:url';
+import {once} from 'node:events';
+import {createServer} from 'node:http';
 import test from 'node:test';
-import ts from 'typescript';
+import {fixture} from './helpers/fixture.mjs';
 
-const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
-const require=createRequire(import.meta.url);
-const wranglerRequire=createRequire(require.resolve('wrangler/package.json'));
-const miniflareRequire=createRequire(wranglerRequire.resolve('miniflare/package.json'));
-const workerd=miniflareRequire('workerd');
-
-test('AI requests run in Workers and reject redirects without forwarding credentials',()=>{
- const temp=mkdtempSync(join(tmpdir(),'people-atlas-ai-runtime-'));
- try{
-  const compile=(source)=>ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText;
-  for(const name of ['ai-extraction','ai-providers']){
-   const source=readFileSync(join(root,'lib',name+'.ts'),'utf8');
-   writeFileSync(join(temp,name+'.js'),compile(source).replace(/from (['"])\.\/(ai-providers|server)\1/g,"from './$2.js'"));
-  }
-  // Load the real error class without bringing unrelated database/auth bindings into the test.
-  const server=ts.createSourceFile('server.ts',readFileSync(join(root,'lib/server.ts'),'utf8'),ts.ScriptTarget.Latest,true);
-  const errorClass=server.statements.find(s=>ts.isClassDeclaration(s)&&s.name?.text==='ApiError');
-  assert.ok(errorClass);
-  writeFileSync(join(temp,'server.js'),compile(errorClass.getText(server)));
-  writeFileSync(join(temp,'test.js'),readFileSync(join(root,'tests/fixtures/ai-runtime.js'),'utf8'));
-  const modules=['test','ai-extraction','ai-providers','server'].map(name=>`(name = "${name}.js", esModule = embed "${name}.js")`).join(',');
-  writeFileSync(join(temp,'config.capnp'),`using Workerd = import "/workerd/workerd.capnp";
-const config :Workerd.Config = (services = [
- (name = "ai-transport-tests", worker = (modules = [${modules}], compatibilityDate = "2026-05-15", globalOutbound = "upstream")),
- (name = "upstream", worker = (modules = [${modules}], compatibilityDate = "2026-05-15", globalOutbound = "upstream"))
-]);`);
-  const result=spawnSync(workerd.default,['test',join(temp,'config.capnp'),'ai-transport-tests'],{encoding:'utf8',timeout:15000});
-  assert.ifError(result.error);
-  assert.equal(result.status,0,(result.stdout||'')+(result.stderr||''));
-  assert.match(result.stderr,/\[ PASS \] ai-transport-tests/);
- }finally{rmSync(temp,{recursive:true,force:true})}
+test('Node HTTP transport normalizes all providers and rejects redirects without forwarding keys',async t=>{
+ const {load}=fixture(),{AI_PROVIDERS}=load('lib/ai-providers.ts');
+ const {extractWithAi}=load('lib/ai-extraction.ts');
+ const output=JSON.stringify({people:[]}), key='fake-runtime-key',note='Test Person is 21.';
+ let forwarded=0;
+ const server=createServer(async(req,res)=>{
+  if(req.url==='/unexpected'){forwarded++;res.end();return}
+  let raw='';for await(const chunk of req)raw+=chunk;
+  const body=JSON.parse(raw),provider=req.url.slice(1);
+  assert.equal(req.method,'POST');assert.equal(req.headers.authorization,'Bearer '+key);
+  assert.equal(provider==='openai'?body.input:body.messages[1].content,note);
+  if(body.model.startsWith('redirect-')){res.writeHead(Number(body.model.slice(9)),{Location:'/unexpected'});res.end();return}
+  if(body.model==='unauthorized'){res.writeHead(401);res.end('{}');return}
+  res.end(JSON.stringify(provider==='openai'?{status:'completed',model:'actual',output:[{content:[{type:'output_text',text:output}]}]}:{model:'actual',choices:[{finish_reason:'stop',message:{content:output}}]}));
+ });
+ server.listen(0,'127.0.0.1');await once(server,'listening');t.after(()=>server.close());
+ const original=globalThis.fetch;
+ t.mock.method(globalThis,'fetch',(url,options)=>{
+  const provider=Object.keys(AI_PROVIDERS).find(p=>AI_PROVIDERS[p].endpoint===url);
+  assert.ok(provider);return original('http://127.0.0.1:'+server.address().port+'/'+provider,options);
+ });
+ for(const provider of Object.keys(AI_PROVIDERS))assert.deepEqual(await extractWithAi(provider,key,'model',note),{model:'actual',output});
+ for(const status of [301,302,303,307,308])await assert.rejects(extractWithAi('openrouter',key,'redirect-'+status,note),e=>e.status===502&&!e.message.includes(key));
+ await assert.rejects(extractWithAi('openrouter',key,'unauthorized',note),e=>e.status===400);
+ assert.equal(forwarded,0);
 });

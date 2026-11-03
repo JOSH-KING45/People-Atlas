@@ -1,4 +1,4 @@
-export const SIGN_IN_REQUIRED_MESSAGE = 'People Atlas could not verify your sign-in. Sign in with ChatGPT to access your saved records.';
+export const SIGN_IN_REQUIRED_MESSAGE = 'People Atlas could not verify your sign-in. Sign in with email to access your saved records.';
 
 export class RequestError extends Error {
   constructor(public status:number, message:string,public code?:string){

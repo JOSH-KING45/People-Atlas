@@ -10,27 +10,27 @@ test('anonymous visitors get a working top-level sign-in link before the workspa
   const page = load('app/page.tsx');
   assert.equal(page.dynamic,'force-dynamic');
   const markup = renderToStaticMarkup(await page.default());
-  assert.match(markup,/<a[^>]+href="\/signin-with-chatgpt\?return_to=%2F"[^>]+target="_top"/);
-  assert.match(markup,/Sign in with ChatGPT/);
+  assert.match(markup,/<a[^>]+href="\/login"[^>]+target="_top"/);
+  assert.match(markup,/Sign in with email/);
   assert.match(markup,/<a[^>]+href="\/guest"[^>]*>.*Continue as guest/);
   assert.match(markup,/Guest data stays in this browser/);
   assert.doesNotMatch(markup,/Connection issue|Add a little context/);
 });
 
 test('recognized identity opens the workspace and uses the stable ID for ownership',async()=>{
-  const f = fixture({'oai-authenticated-user-id':'test-user-a','oai-authenticated-user-email':'a@example.test'});
+  const f = fixture({'fixture-session-id':'test-user-a','fixture-email':'a@example.test'});
   assert.equal((await f.load('app/page.tsx').default()).type,f.Workspace);
   const server = f.load('lib/server.ts');
   assert.equal(await server.owner(),'test-user-a');
-  f.setHeaders({'oai-authenticated-user-id':'test-user-b','oai-authenticated-user-email':'b@example.test'});
+  f.setHeaders({'fixture-session-id':'test-user-b','fixture-email':'b@example.test'});
   assert.equal(await server.owner(),'test-user-b');
 });
 
 test('absent or partial identity cannot access any saved-data endpoint',async()=>{
   const f = fixture();
-  Object.defineProperty(f.env,'DB',{get:()=>{assert.fail('Unauthenticated request reached the database')}});
-  Object.defineProperty(f.env,'BUCKET',{get:()=>{assert.fail('Unauthenticated request reached file storage')}});
-  for(const headers of [{},{'oai-authenticated-user-email':'a@example.test'},{'oai-authenticated-user-id':'test-user-a'}]){
+  Object.defineProperty(f.client,'from',{get:()=>{assert.fail('Unauthenticated request reached the database')}});
+  Object.defineProperty(f.client,'storage',{get:()=>{assert.fail('Unauthenticated request reached file storage')}});
+  for(const headers of [{},{'fixture-email':'a@example.test'},{'fixture-session-id':'test-user-a'}]){
     f.setHeaders(headers);
     for(const name of ['people','settings','sources']){
       const route = f.load(`app/api/${name}/route.ts`);
@@ -38,18 +38,16 @@ test('absent or partial identity cannot access any saved-data endpoint',async()=
         const response = await route[method](new Request(`https://example.test/api/${name}`,{method}));
         assert.equal(response.status,401,`${method} ${name}`);
         assert.equal(response.headers.get('cache-control'),'no-store');
-        assert.match((await response.json()).error,/Sign in with ChatGPT/);
+        assert.match((await response.json()).error,/Sign in with email/);
       }
     }
   }
 });
 
-test('sign-in destinations remain on the site and cannot loop through reserved auth routes',()=>{
-  const {chatGPTSignInPath} = fixture().load('app/chatgpt-auth.ts');
-  for(const path of ['https://example.test','//example.test','/signin-with-chatgpt','/callback?code=test','/signout-with-chatgpt']){
-    assert.equal(chatGPTSignInPath(path),'/signin-with-chatgpt?return_to=%2F');
-  }
-  assert.equal(chatGPTSignInPath('/?view=people'),'/signin-with-chatgpt?return_to=%2F%3Fview%3Dpeople');
+test('untrusted identity headers cannot authenticate or redirect a visitor',async()=>{
+ const f=fixture({'oai-authenticated-user-id':'forged','oai-authenticated-user-email':'a@test.com','return_to':'https://other.test'});
+ assert.equal(await f.load('app/account.ts').currentUser(),null);
+ assert.match(renderToStaticMarkup(await f.load('app/page.tsx').default()),/href="\/login"/);
 });
 
 test('the client classifies JSON and HTML 401 responses as sign-in failures',async(t)=>{
@@ -59,7 +57,7 @@ test('the client classifies JSON and HTML 401 responses as sign-in failures',asy
       assert.equal(options.credentials,'same-origin');
       return new Response(content,{status:401});
     });
-    await assert.rejects(apiRequest('/api/people'),error=>isSignInError(error)&&/Sign in with ChatGPT/.test(error.message));
+    await assert.rejects(apiRequest('/api/people'),error=>isSignInError(error)&&/Sign in with email/.test(error.message));
     mock.mock.restore();
   }
 });
@@ -101,18 +99,17 @@ test('provider results normalize correctly and incomplete or rejected responses 
 });
 
 test('switching providers requires a new key and stores provider and encrypted key together',async()=>{
- const f=fixture({'oai-authenticated-user-id':'test-user-a','oai-authenticated-user-email':'a@example.test'});
+ const f=fixture({'fixture-session-id':'test-user-a','fixture-email':'a@example.test'});
  f.env.SETTINGS_ENCRYPTION_KEY=Buffer.alloc(32,7).toString('base64');
- let saved;
- f.env.DB={prepare:()=>({bind:(...values)=>({first:async()=>({google_client_id:'',encrypted_ai_key:'old-ciphertext',ai_model:'gpt-4.1-mini',ai_provider:'openai'}),run:async()=>{saved=values}})})};
+ f.tables.settings.push({owner:'test-user-a',encrypted_ai_key:'old-ciphertext',google_client_id:'',ai_model:'gpt-4.1-mini',ai_provider:'openai'});
  const {POST}=f.load('app/api/settings/route.ts');
  const request=(input)=>new Request('https://example.test/api/settings',{method:'POST',body:JSON.stringify(input)});
  let response=await POST(request({aiProvider:'openrouter',aiModel:'provider/model:free'}));
- assert.equal(response.status,400);assert.equal(saved,undefined);
+ assert.equal(response.status,400);assert.equal(f.tables.settings[0].encrypted_ai_key,'old-ciphertext');
  response=await POST(request({aiProvider:'openrouter',aiModel:'provider/model:free',aiKey:'new-test-key'}));
- assert.equal(response.status,200);assert.equal(saved[0],'test-user-a');assert.equal(saved[4],'openrouter');
- assert.notEqual(saved[2],'new-test-key');assert.notEqual(saved[2],'old-ciphertext');
- assert.equal(await f.load('lib/server.ts').decrypt(saved[2]),'new-test-key');
+ assert.equal(response.status,200);const saved=f.tables.settings[0];assert.equal(saved.owner,'test-user-a');assert.equal(saved.ai_provider,'openrouter');
+ assert.notEqual(saved.encrypted_ai_key,'new-test-key');assert.notEqual(saved.encrypted_ai_key,'old-ciphertext');
+ assert.equal(await f.load('lib/server.ts').decrypt(saved.encrypted_ai_key),'new-test-key');
  const result=await response.json();assert.equal(result.aiProvider,'openrouter');assert.equal(result.hasAiKey,true);assert.ok(!JSON.stringify(result).includes('new-test-key'));
 });
 
@@ -154,13 +151,10 @@ test('OpenRouter errors distinguish free limits, unavailable models, and account
 });
 
 test('free extraction returns the actual model for review and rejects invalid or partial profiles without saving',async(t)=>{
- const f=fixture({'oai-authenticated-user-id':'test-user-a','oai-authenticated-user-email':'a@example.test'});
+ const f=fixture({'fixture-session-id':'test-user-a','fixture-email':'a@example.test'});
  f.env.SETTINGS_ENCRYPTION_KEY=Buffer.alloc(32,7).toString('base64');
  const key=await f.load('lib/server.ts').encrypt('fake-key');
- f.env.DB={prepare:(sql)=>{
-  assert.match(sql,/^SELECT .* FROM settings WHERE owner=\?$/);
-  return {bind:(owner)=>{assert.equal(owner,'test-user-a');return {first:async()=>({encrypted_ai_key:key,google_client_id:'',ai_provider:'openrouter',ai_model:'openrouter/free'})}}};
- }};
+ f.tables.settings.push({owner:'test-user-a',encrypted_ai_key:key,ai_model:'openrouter/free',ai_provider:'openrouter'});
  const {POST}=f.load('app/api/extract/route.ts');
  const note='Fictional Zara is 19 and lives in Abuja.';
  const input=()=>new Request('https://example.test/api/extract',{method:'POST',body:JSON.stringify({text:note,mode:'ai'})});

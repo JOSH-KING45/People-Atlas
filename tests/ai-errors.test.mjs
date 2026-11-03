@@ -23,10 +23,11 @@ test('malformed upstream content is rejected instead of crashing',async(t)=>{
 });
 
 test('AI extraction preserves repeated details, rejects oversized combinations and never saves automatically',async(t)=>{
- const f=fixture({'oai-authenticated-user-id':'test-user-a','oai-authenticated-user-email':'a@example.test'});
+ const f=fixture({'fixture-session-id':'test-user-a','fixture-email':'a@example.test'});
  f.env.SETTINGS_ENCRYPTION_KEY=Buffer.alloc(32,7).toString('base64');
  const key=await f.load('lib/server.ts').encrypt('fake-key');
- f.env.DB={prepare:sql=>{assert.match(sql,/^SELECT /);return{bind:()=>({first:async()=>({encrypted_ai_key:key,ai_provider:'openrouter',ai_model:'openrouter/free'})})}}};
+ f.tables.settings.push({owner:'test-user-a',encrypted_ai_key:key,ai_provider:'openrouter',ai_model:'openrouter/free'});
+
  const route=f.load('app/api/extract/route.ts');
  let fields=[{label:'Interests',value:'music'},{label:'Interests',value:'coding'},{label:'birthday',value:'maybe 15 June'}];
  t.mock.method(globalThis,'fetch',async()=>Response.json({model:'fixture/model',choices:[{finish_reason:'stop',message:{content:JSON.stringify({people:[{name:'Test Alex',fields,sourceNote:'Test note'}]})}}]}));
@@ -43,7 +44,7 @@ test('invalid client response bodies keep their status and never become a sign-i
 
 test('guest AI uses a supplied session key without identity or database access',async(t)=>{
  const f=fixture();
- Object.defineProperty(f.env,'DB',{get:()=>{assert.fail('Guest extraction accessed the database')}});
+ Object.defineProperty(f.client,'from',{get:()=>{assert.fail('Guest extraction accessed the database')}});
  const fetch=t.mock.method(globalThis,'fetch',async(_url,options)=>{
   assert.equal(options.headers.Authorization,'Bearer guest-session-key');
   return Response.json({model:'fixture/free-model',choices:[{finish_reason:'stop',message:{content:JSON.stringify({people:[{name:'Guest Alex',fields:[{label:'Lives in',value:'Abuja'}],sourceNote:'Guest Alex lives in Abuja.'}]})}}]});
