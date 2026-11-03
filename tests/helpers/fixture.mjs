@@ -14,9 +14,10 @@ export function fixture(initialHeaders = {}){
   const env = {};
   const Workspace = () => null;
   const cloud=cloudFixture();
+  const auth={getUser:async()=>({data:{user:requestHeaders.has('fixture-session-id')&&requestHeaders.has('fixture-email')?{id:requestHeaders.get('fixture-session-id')}:null}})};
   const services={
     adminClient:()=>cloud.client,
-    sessionClient:async()=>({auth:{getUser:async()=>({data:{user:requestHeaders.has('fixture-session-id')&&requestHeaders.has('fixture-email')?{id:requestHeaders.get('fixture-session-id')}:null}})}})
+    sessionClient:async()=>({auth})
   };
   const replacements = {
     'next/headers':{headers:async()=>requestHeaders},
@@ -42,6 +43,6 @@ export function fixture(initialHeaders = {}){
     new Function('require','module','exports','process',output)(requireSource,loadedModule,loadedModule.exports,{env});
     return loadedModule.exports;
   }
-  return {...cloud,load,env,Workspace,setHeaders:(value)=>{requestHeaders = new Headers(value)}};
+  return {...cloud,auth,load,env,Workspace,setHeaders:(value)=>{requestHeaders = new Headers(value)}};
 }
 

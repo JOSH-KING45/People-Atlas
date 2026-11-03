@@ -1,3 +1,9 @@
+## Google sign-in integration — 3 November 2026
+
+Added a separate Google login form, server-side PKCE initiation and code-exchange callback. Redirects use APP_URL and ignore client-supplied destinations. Six new regression tests cover the fixed callback, cross-origin request rejection, OAuth failure, callback denial and code errors, invalid origins and the disabled-provider guard. All 55 tests, TypeScript, focused lint and the clean native production build passed.
+
+The production APP_URL and Supabase callback allowlist are configured. Google Auth is disabled in Supabase because its Client ID and Client Secret are not available. Google Cloud Console was inaccessible to the agent browser. The login button remains disabled until those credentials are configured and GOOGLE_AUTH_ENABLED=true is deployed. A live Google consent/session test remains pending. Existing cloud-account and private-upload end-to-end verification is also pending.
+
 # Vercel migration checkpoint — 3 November 2026
 
 The supplied archive passed its original 47 tests. The native Next.js application passed a clean frozen installation, TypeScript, production build and 49 current regression tests. Local PostgreSQL execution via PGlite covers RLS, service-only RPC privileges, stale and mixed-conflict batches, rollback and quota enforcement. HTTP storage and account services use controlled doubles in the route tests.

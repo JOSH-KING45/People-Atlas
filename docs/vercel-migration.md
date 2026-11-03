@@ -33,3 +33,21 @@ The shared extractor uses a database-backed budget of five calls per minute for 
 ## Release checks
 
 Verify email confirmation, logout, session refresh, two-account isolation, create/update/delete, signed private uploads and byte-exact downloads (including 15 MiB), and persistence across a redeployment. Exercise guest IndexedDB, extraction, review and backup/restore from a fresh browser. Verify real AI and Google calls separately with consented credentials. Attach mypeople.com.ng after validation on the Vercel URL; use the ownership challenge and DNS target issued for that project. Check HTTPS before switching traffic.
+
+## Google sign-in
+
+The login page includes Continue with Google. Configure a Google OAuth web client with the production origin in Authorized JavaScript origins and the following Authorized redirect URI.
+
+```text
+https://qyhlkxdshylsfikworzp.supabase.co/auth/v1/callback
+```
+
+Save its Client ID and Client Secret in the Google provider in Supabase Auth. Keep nonce checks enabled. The login requests only identity scopes; Calendar and Sheets continue to use their existing separate consent flows. The exact application callback is registered in Supabase Redirect URLs.
+
+```text
+https://people-atlas-japhetajoshua-5075.vercel.app/auth/callback
+```
+
+APP_URL must equal the production origin. Enable GOOGLE_AUTH_ENABLED=true in Vercel and redeploy only after provider configuration is saved. Until then the button is disabled and its route returns a safe sign-in error. Code exchange uses the Supabase SSR PKCE verifier cookie and sends the user to the workspace on the configured origin. Redirect parameters from the browser are ignored. Google credentials belong in Supabase, never in GitHub or public environment variables.
+
+After enabling the provider, verify the entire Google consent and callback flow, profile persistence, logout and a second account's isolation. Google sign-in does not transfer old Sites records or guest data. Supabase handles identity linking for verified email identities. Do not implement account linking using client-supplied emails.
