@@ -8,7 +8,7 @@ export function cloudFixture(){
     select(selection){columns=selection;return query},
     eq(key,value){filters.push([key,value]);return query},
     delete(){remove=true;return query},
-    order(){return query},
+    order(){return query},limit(){return query},
     async upsert(row){
      const key=table==='settings'?'owner':'id';
      const old=tables[table].find(item=>item[key]===row[key]);

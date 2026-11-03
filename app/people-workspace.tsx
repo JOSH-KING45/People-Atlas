@@ -20,7 +20,7 @@ import {Choose,Initials,EmptyPeople,PersonEditor} from '@/components/atlas-ui';
 import {type Person,type Source,CORE,dimensions,groupsFor,ageOf,nextBirthday,formatBirthday,birthdayParts,smartFolderCount,normalizeName,fromRows,rowsFromGrid,newPersonId,example,months} from '@/lib/people';
 import {readFile,exportPeople,type ReadResult} from '@/lib/files';
 import {exportCalendar,googleCalendarLink,loadGoogle,authorizeGoogle,sendBirthdays} from '@/lib/calendar';
-import {apiRequest,isSignInError,SIGN_IN_REQUIRED_MESSAGE} from '@/lib/api-client';
+import {apiRequest,listRecords,isSignInError,SIGN_IN_REQUIRED_MESSAGE} from '@/lib/api-client';
 import {guestApiRequest,guestSourceUrls} from '@/lib/guest-storage';
 
 import {AI_PROVIDERS,RECOMMENDED_OPENROUTER_MODEL,type AiProvider} from '@/lib/ai-providers';
@@ -44,7 +44,7 @@ export default function PeopleWorkspace({signInHref,guest=false,tourScope="guest
  const [extractErrorCode,setExtractErrorCode]=useState('');
  const [fieldFilters,setFieldFilters]=useState<FieldFilter[]>([]),[extractError,setExtractError]=useState('');
  const noteInput=useRef<HTMLTextAreaElement>(null);
- const refresh=useCallback(async()=>{setLoading(true);setLoadError('');try{const [p,s,c]=await Promise.all([request('/api/people'),request('/api/sources'),request('/api/settings')]);setPeople(p.people);setSources(s.sources);setConfig(c);setClientId(c.googleClientId);if(!guest){setAiModel(c.aiModel);setAiProvider(c.aiProvider)}setSessionExpired(false)}catch(e){setLoadError(errorMessage(e))}finally{setLoading(false)}},[request,guest]);
+ const refresh=useCallback(async()=>{setLoading(true);setLoadError('');try{const [p,s,c]=await Promise.all([listRecords<Person>(request,'people'),listRecords<Source>(request,'sources'),request('/api/settings')]);setPeople(p.sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'})));setSources(s.sort((a,b)=>b.createdAt.localeCompare(a.createdAt)));setConfig(c);setClientId(c.googleClientId);if(!guest){setAiModel(c.aiModel);setAiProvider(c.aiProvider)}setSessionExpired(false)}catch(e){setLoadError(errorMessage(e))}finally{setLoading(false)}},[request,guest]);
  useEffect(()=>{void refresh();apiRequest('/api/ai-status').then(r=>setSharedAi(r.sharedAiAvailable===true)).catch(()=>setSharedAi(false))},[refresh]);
  useEffect(()=>{if(!guest){setSourceUrls({});return}let active=true;let urls:Record<string,string>={};guestSourceUrls().then(value=>{urls=value;if(active)setSourceUrls(value);else Object.values(value).forEach(URL.revokeObjectURL)}).catch(()=>{});return()=>{active=false;Object.values(urls).forEach(URL.revokeObjectURL)}},[guest,sources]);
  useEffect(()=>{if(!config.googleClientId)return;loadGoogle().then(()=>setGoogleReady(true)).catch(()=>setGoogleReady(false))},[config.googleClientId]);

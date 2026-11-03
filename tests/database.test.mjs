@@ -67,3 +67,18 @@ test('source upload/download/delete preserves bytes and blocks another account',
  f.setHeaders(identity('test-user-b'));assert.equal((await get()).status,404);assert.equal((await route.DELETE(request('sources',{id:source.id},'DELETE'))).status,404);assert.equal(f.files.size,1);
  f.setHeaders(identity('test-user-a'));assert.equal((await route.DELETE(request('sources',{id:source.id},'DELETE'))).status,200);assert.equal(f.files.size,0);assert.equal((await get()).status,404);
 });
+
+test('directory pagination respects response size, validates cursors and assembles complete records',async()=>{
+ const f=fixture(),{listPage,afterId}=f.load('lib/list-page.ts');
+ const rows=Array.from({length:51},(_,i)=>({id:('00000000-0000-4000-8000-'+String(i).padStart(12,'0')),notes:'界'.repeat(30000)}));
+ const first=listPage(rows);
+ assert.ok(first.items.length>0&&first.items.length<50);
+ assert.equal(first.next,first.items.at(-1).id);
+ assert.throws(()=>afterId(new Request('https://app.test/?after=bad')));
+ const {listRecords}=f.load('lib/api-client.ts');
+ const result=await listRecords(async url=>{
+  const id=afterId(new Request('https://app.test'+url));
+  const {items,next}=listPage(rows.filter(r=>!id||r.id>id));return {people:items,next};
+ },'people');
+ assert.deepEqual(result,rows);
+});

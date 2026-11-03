@@ -1,3 +1,4 @@
+import {afterId,listPage,pageSize} from '@/lib/list-page';
 import {api,body,json,owner,ApiError} from '@/lib/server';
 import {adminClient} from '@/lib/supabase';
 import {z} from 'zod';
@@ -16,9 +17,12 @@ export function GET(request:Request){return api(async()=>{
   if(signError)throw signError;
   return new Response(null,{status:302,headers:{Location:data.signedUrl,'Cache-Control':'private, no-store','Referrer-Policy':'no-referrer'}});
  }
- const {data,error}=await client.from('sources').select('id,name,size,createdAt:created_at').eq('owner',account).order('created_at',{ascending:false});
+ const cursor=afterId(request);
+ let query=client.from('sources').select('id,name,size,createdAt:created_at').eq('owner',account).order('id').limit(pageSize+1);
+ if(cursor)query=query.gt('id',cursor);
+ const {data,error}=await query;
  if(error)throw error;
- return json({sources:data});
+ const {items,next}=listPage(data);return json({sources:items,next});
 })}
 export function POST(request:Request){return api(async()=>{
  const account=await owner(),input=await body(request,2048),metadata=upload.safeParse(input);

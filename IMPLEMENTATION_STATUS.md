@@ -1,4 +1,14 @@
-# People Atlas UI/UX improvement
+# Vercel migration checkpoint — 3 November 2026
+
+The supplied archive passed its original 47 tests. The native Next.js application passed a clean frozen installation, TypeScript, production build and 49 current regression tests. Local PostgreSQL execution via PGlite covers RLS, service-only RPC privileges, stale and mixed-conflict batches, rollback and quota enforcement. HTTP storage and account services use controlled doubles in the route tests.
+
+A local production Chromium session exercised the signed-out homepage, rejection of forged Sites identity headers, all seven tour steps on mobile, built-in extraction, review/save, reload persistence, theme switching, profile tabs, guest JSON backup/restore and dashboard widths of 320, 768 and 1440 pixels. Lint still reports legacy type and React hook issues. The current hosted release is gated on backend configuration.
+
+Next steps are to provision the dedicated Supabase project, inspect the empty schema and apply the three reviewed migrations. Configure email confirmation, the project URL, publishable key and server secret. The production encryption key has been configured in Vercel. Run the hosted account, isolation, signed-storage and redeployment checks in docs/vercel-migration.md. Live AI and Google consent checks require credentials. The old Sites database and original files have not been transferred. Configure custom DNS only after the Vercel deployment passes.
+
+## Historical Sites implementation notes
+
+### People Atlas UI/UX improvement
 
 ## Included AI follow-up
 

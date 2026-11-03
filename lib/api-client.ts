@@ -22,3 +22,18 @@ export async function apiRequest(url:string,options?:RequestInit){
   if(!response.ok) throw new RequestError(response.status,typeof data.error==='string'?data.error:'Please try again.',typeof data.code==='string'?data.code:undefined);
   return data;
 }
+
+export async function listRecords<T>(request:(url:string)=>Promise<Record<string,unknown>>,key:'people'|'sources'){
+ const records:T[]=[];
+ let after='';
+ do{
+  const page=await request('/api/'+key+(after?'?after='+encodeURIComponent(after):''));
+  const rows=page[key];
+  if(!Array.isArray(rows))throw new Error('Invalid directory response.');
+  records.push(...rows);
+  const next=page.next;
+  if(next!=null && (typeof next!=='string'||next<=after))throw new Error('Invalid directory cursor.');
+  after=typeof next==='string'?next:'';
+ }while(after);
+ return records;
+}
