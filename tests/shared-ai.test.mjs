@@ -21,3 +21,13 @@ test('shared mode retains origin, input and configuration checks',async t=>{
  f.env.SHARED_OPENROUTER_API_KEY='shared-test';assert.equal((await route.POST(request('/api/guest-extract',{text:'Test'},{origin:'https://other.test'}))).status,403);
  assert.equal((await route.POST(request('/api/guest-extract',{text:' '}))).status,400);assert.equal(fetch.mock.callCount(),0);
 });
+
+test('shared Groq uses server-selected credentials and model, never visitor overrides',async t=>{
+ const f=fixture();f.env.SHARED_GROQ_API_KEY='groq-server-test';f.env.SHARED_GROQ_MODEL='server-model';
+ t.mock.method(globalThis,'fetch',async(url,options)=>{assert.equal(url,'https://api.groq.com/openai/v1/chat/completions');assert.equal(options.headers.Authorization,'Bearer groq-server-test');assert.equal(JSON.parse(options.body).model,'server-model');return Response.json(result)});
+ const r=await f.load('app/api/guest-extract/route.ts').POST(request('/api/guest-extract',{text:'Test Alex is 22.',provider:'openai',model:'visitor-model'}));assert.equal(r.status,200);assert.doesNotMatch(JSON.stringify(await r.json()),/groq-server-test/);
+});
+test('incomplete shared Groq configuration fails closed',async()=>{
+ const f=fixture();f.env.SHARED_GROQ_API_KEY='test';f.env.SHARED_OPENROUTER_API_KEY='fallback';
+ assert.deepEqual(await (await f.load('app/api/ai-status/route.ts').GET()).json(),{sharedAiAvailable:false});
+});
