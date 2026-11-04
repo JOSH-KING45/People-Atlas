@@ -1,0 +1,20 @@
+'use client';
+import {useEffect,useRef,useState} from 'react';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from './ui/dialog';
+import {cropRectangle,type Crop} from '@/lib/photo-crop';
+import {preparePhoto} from '@/lib/photo-upload';
+type Pending={file:File;background:boolean;resolve:(blob:Blob)=>void;reject:(error:Error)=>void};
+export function usePhotoCrop(){
+ const [pending,setPending]=useState<Pending|null>(null);
+ const crop=(file:File,background=false)=>new Promise<Blob>((resolve,reject)=>{if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>15*1024*1024){reject(new Error('Choose a JPEG, PNG or WebP image up to 15 MB.'));return}setPending({file,background,resolve,reject})});
+ const close=()=>{pending?.reject(new DOMException('Photo selection cancelled.','AbortError'));setPending(null)};
+ const modal=<Dialog open={!!pending} onOpenChange={v=>{if(!v)close()}}><DialogContent className="crop-dialog" onPointerDownOutside={e=>e.preventDefault()}><DialogHeader><DialogTitle>Crop your picture</DialogTitle><DialogDescription>Adjust the zoom and position. The preview shows the saved crop.</DialogDescription></DialogHeader>{pending&&<CropEditor file={pending.file} background={pending.background} onCancel={close} onSave={blob=>{pending.resolve(blob);setPending(null)}}/>}</DialogContent></Dialog>;
+ return{crop,modal};
+}
+function CropEditor({file,background,onSave,onCancel}:{file:File;background:boolean;onSave:(blob:Blob)=>void;onCancel:()=>void}){
+ const [crop,setCrop]=useState<Crop>({zoom:1,x:50,y:50}),[image,setImage]=useState<HTMLImageElement|null>(null),[error,setError]=useState(''),[saving,setSaving]=useState(false);const canvas=useRef<HTMLCanvasElement>(null);
+ useEffect(()=>{let active=true;const url=URL.createObjectURL(file);const next=new Image();next.src=url;next.decode().then(()=>{if(next.naturalWidth*next.naturalHeight>60_000_000)throw new Error('Picture is too large. Choose a smaller image.');if(active)setImage(next)}).catch(()=>{if(active)setError('This picture could not be opened. Choose a different image.')});return()=>{active=false;URL.revokeObjectURL(url)}},[file]);
+ useEffect(()=>{if(!image||!canvas.current)return;const context=canvas.current.getContext('2d');if(!context)return;const r=cropRectangle(image.naturalWidth,image.naturalHeight,background?16/9:1,crop);context.fillStyle='#fff';context.fillRect(0,0,canvas.current.width,canvas.current.height);context.drawImage(image,r.x,r.y,r.width,r.height,0,0,canvas.current.width,canvas.current.height)},[image,crop,background]);
+ const save=async()=>{setSaving(true);try{onSave(await preparePhoto(file,background,crop))}catch(e){setError(e instanceof Error?e.message:'Picture could not be cropped.');setSaving(false)}};
+ return <div className="crop-editor">{error&&<p role="alert" className="error-banner">{error}</p>}<canvas ref={canvas} width={background?800:512} height={background?450:512} className={'crop-preview'+(!background?' portrait-crop':'')} aria-label={background?'Dashboard background crop preview':'Square portrait crop preview'}/>{!image&&!error&&<p role="status">Loading picture…</p>}<div className="crop-controls">{([{key:'zoom',label:'Zoom',min:1,max:3,step:.01},{key:'x',label:'Horizontal position',min:0,max:100,step:1},{key:'y',label:'Vertical position',min:0,max:100,step:1}] as const).map(control=><label key={control.key}>{control.label}<input type="range" min={control.min} max={control.max} step={control.step} value={crop[control.key]} disabled={saving||!image} onChange={e=>setCrop(c=>({...c,[control.key]:Number(e.target.value)}))}/></label>)}</div><div className="action-row"><button type="button" className="quiet-button" disabled={saving} onClick={()=>setCrop({zoom:1,x:50,y:50})}>Reset crop</button><button type="button" className="outline-button" disabled={saving} onClick={onCancel}>Cancel</button><button type="button" className="primary-button" disabled={saving||!image||!!error} onClick={()=>void save()}>{saving?'Preparing…':'Use this crop'}</button></div></div>;
+}

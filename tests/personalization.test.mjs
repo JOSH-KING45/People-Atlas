@@ -50,3 +50,22 @@ test('voice appends only new final transcripts and retains the original note on 
  speech.onresult({resultIndex:0,results:[final]});speech.onresult({resultIndex:0,results:[final]});assert.equal(note,'Original note\nAda likes chess.');
  speech.onerror({error:'not-allowed'});speech.onerror({error:'network'});assert.equal(note,'Original note\nAda likes chess.');assert.equal(ended,2);assert.equal(errors.length,2);assert.match(errors[0],/permission was denied/);
 });
+
+test('crop geometry fits portraits and dashboard backgrounds inside source bounds',()=>{
+ const {cropRectangle}=fixture().load('lib/photo-crop.ts');
+ assert.deepEqual(cropRectangle(1200,800,1,{zoom:1,x:50,y:50}),{x:200,y:0,width:800,height:800});
+ for(const [width,height] of [[1200,800],[600,1400],[100,100]])for(const aspect of [1,16/9])for(const zoom of [1,2,3])for(const position of [0,50,100]){
+  const r=cropRectangle(width,height,aspect,{zoom,x:position,y:position});assert.ok(r.x>=0&&r.y>=0);assert.ok(r.x+r.width<=width+.001);assert.ok(r.y+r.height<=height+.001);assert.ok(Math.abs(r.width/r.height-aspect)<.001);
+ }
+ assert.throws(()=>cropRectangle(0,100,1,{zoom:1,x:50,y:50}));
+});
+test('favourites preserve uploaded photos and remain private to the person owner',async()=>{
+ const f=fixture(headers(a));const id=crypto.randomUUID(),path=`${a}/${crypto.randomUUID()}.jpg`;f.tables.people.push({id,owner:a});f.files.set(path,new Uint8Array([255,216,255,217]));
+ const r=f.load('app/api/preferences/route.ts');
+ assert.equal((await r.POST(req({key:'person:'+id,value:{photo:path,favorite:true}}))).status,200);
+ let prefs=(await (await r.GET()).json()).preferences;assert.equal(prefs['person:'+id].favorite,true);assert.equal(prefs['person:'+id].photo,path);
+ assert.equal((await r.POST(req({key:'person:'+id,value:{...prefs['person:'+id],favorite:false}}))).status,200);
+ prefs=(await (await r.GET()).json()).preferences;assert.equal(prefs['person:'+id].favorite,false);assert.equal(prefs['person:'+id].photo,path);
+ assert.equal((await r.POST(req({key:'person:'+id,value:{photo:path,favorite:'yes'}}))).status,400);
+ f.setHeaders(headers(b));assert.equal((await r.POST(req({key:'person:'+id,value:{photo:'',favorite:true}}))).status,404);assert.deepEqual((await (await r.GET()).json()).preferences,{});
+});

@@ -16,6 +16,6 @@ export function validatePreference(key:unknown,value:unknown,owner:string){
  if(key==='tour'){if(v.done!==true)throw new Error('Invalid tour preference.');out={done:true}}
  else if(key==='profile'){if(typeof v.name!=='string'||v.name.length>100||typeof v.bio!=='string'||v.bio.length>500)throw new Error('Use a name up to 100 characters and bio up to 500.');out={name:v.name.trim(),bio:v.bio.trim(),photo:image(v.photo)}}
  else if(key==='dashboard'){if(!THEMES.some(t=>t.id===v.theme)||typeof v.wallpaper!=='string'||v.wallpaper!==''&&!WALLPAPERS.some(p=>p.id===v.wallpaper))throw new Error('Choose a preset theme and background.');out={theme:v.theme as string,wallpaper:v.wallpaper,photo:image(v.photo)}}
- else out={photo:image(v.photo)};
+ else {if(v.favorite!==undefined&&typeof v.favorite!=='boolean')throw new Error('Invalid favourite preference.');out={photo:image(v.photo),favorite:v.favorite===true}};
  return {key,value:out};
 }

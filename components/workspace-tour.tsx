@@ -6,7 +6,7 @@ import {toast} from 'sonner';
 import {ArrowLeft,ArrowRight} from 'lucide-react';
 import {createPortal} from 'react-dom';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from './ui/dialog';
-export type TourView='Inbox'|'People'|'Smart folders'|'Insights'|'Calendar'|'Files & export';
+export type TourView='Favourites'|'Inbox'|'People'|'Smart folders'|'Insights'|'Calendar'|'Files & export';
 const targets=['[aria-label="Details about people"]','[data-tour="add-person"]','.directory-toolbar','[data-tour="folders"]','.insight-actions','[data-tour="calendar"]','.dropzone'];
 const steps: {view:TourView;title:string;text:string;tip:string}[]=[
  {view:'Inbox',title:'Capture the little things',text:'Paste what you know here, select AI extraction, then choose Extract details. People Atlas turns your note into structured details for you to review.',tip:'Example: David is 19, studies Computer Science at FUTMINNA, and his birthday is May 4. Review and edit detected values before saving. Calculated estimates are labelled.'},

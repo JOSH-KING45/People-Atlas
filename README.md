@@ -60,3 +60,8 @@ Curated Unsplash backgrounds include alpine scenery, ocean, dunes and mountain r
 The tour is automatically shown once. Its dismissal is saved to the account, with the existing browser preference carried forward. It remains replayable from navigation. Guest dismissal remains local to the browser. If preference loading fails, the automatic tour waits rather than repeatedly interrupting the user.
 
 **Add with voice** uses the browser Speech Recognition API, where supported, and requires microphone permission. Audio may be processed by the browser’s speech provider; no new paid speech API is configured. Final transcripts append to the editable note, and all existing review/save steps remain required. Unsupported browsers offer typing instead. Real microphone transcription must be checked on the user’s device.
+
+
+Uploaded account photos, people photos and dashboard pictures now open a crop preview before saving. Use zoom and horizontal/vertical position controls, reset, cancel, or apply the crop. Portraits use a square crop suitable for avatar circles; dashboard crops use 16:9. Cancelling leaves the saved photo unchanged.
+
+The sidebar includes **My profile** (or the saved display name) and **Favourites**. The star at the edge of every People card/list row toggles a favourite independently of opening the person. Favourites keep the existing search/filter controls. Stars persist in account preferences or guest IndexedDB and do not change people’s original fields or notes.
