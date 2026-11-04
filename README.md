@@ -48,3 +48,15 @@ Provider routing, response handling, encrypted key replacement, and auth tests u
 Provider references: https://ai.google.dev/gemini-api/docs/openai · https://console.groq.com/docs/openai · https://openrouter.ai/docs/api/reference/overview
 
 Free setup references: https://openrouter.ai/docs/guides/routing/routers/free-router · https://openrouter.ai/docs/guides/features/structured-outputs · https://openrouter.ai/docs/guides/routing/provider-selection · https://openrouter.ai/docs/api/reference/limits
+
+### Profile, appearance, photos and voice
+
+The account icon in the workspace opens **My profile & appearance**. Account display names, bios, photos, dashboard accents and backgrounds persist in `atlas_preferences`; guest preferences remain in this browser’s IndexedDB. Saved people have an **Add or change photo** picker under **Edit details**. Initials remain the fallback when no photo is selected.
+
+Cloud photos use the private `atlas-images` bucket. The browser decodes JPEG/PNG/WebP uploads up to 15 MB and resizes them to JPEG (512 px for portraits, 1600 px for backgrounds, at most 2 MB). Authenticated server endpoints enforce ownership, origin, raster signature and upload size. Images use short-lived signed access. Account photos and appearance preferences are separate from people JSON/spreadsheet exports. Old replaced uploads remain private in the bucket; storage usage counts toward the Supabase free tier.
+
+Curated Unsplash backgrounds include alpine scenery, ocean, dunes and mountain reflections with photographer credits. These images load from Unsplash when the appearance picker is opened or a preset is selected. Themes retain the existing light/dark control and readable dashboard overlays.
+
+The tour is automatically shown once. Its dismissal is saved to the account, with the existing browser preference carried forward. It remains replayable from navigation. Guest dismissal remains local to the browser. If preference loading fails, the automatic tour waits rather than repeatedly interrupting the user.
+
+**Add with voice** uses the browser Speech Recognition API, where supported, and requires microphone permission. Audio may be processed by the browser’s speech provider; no new paid speech API is configured. Final transcripts append to the editable note, and all existing review/save steps remain required. Unsupported browsers offer typing instead. Real microphone transcription must be checked on the user’s device.

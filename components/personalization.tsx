@@ -1,0 +1,46 @@
+'use client';
+/* eslint-disable @next/next/no-img-element */
+import {createContext,useCallback,useContext,useEffect,useState,type CSSProperties,type ReactNode} from 'react';
+import {Camera,Palette,UserRound} from 'lucide-react';
+import {toast} from 'sonner';
+import {apiRequest} from '@/lib/api-client';
+import {guestApiRequest} from '@/lib/guest-storage';
+import {type Preferences,THEMES,WALLPAPERS,wallpaperUrl} from '@/lib/personalization';
+import {preparePhoto,dataUrl} from '@/lib/photo-upload';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription} from './ui/dialog';
+
+type Context={prefs:Preferences;ready:boolean;available:boolean;save:(key:string,value:Record<string,string|boolean>)=>Promise<void>;upload:(file:File,background?:boolean)=>Promise<string>;image:(path:unknown)=>string;open:()=>void};
+const Personalization=createContext<Context>({prefs:{},ready:false,available:false,save:async()=>{},upload:async()=>'',image:()=>'',open:()=>{}});
+export function usePersonalization(){return useContext(Personalization)}
+export function PersonalizationProvider({guest,children}:{guest:boolean;children:ReactNode}){
+ const [prefs,setPrefs]=useState<Preferences>({}),[ready,setReady]=useState(false),[available,setAvailable]=useState(false),[opened,setOpened]=useState(false);
+ const request=useCallback((url:string,options?:RequestInit)=>guest?guestApiRequest(url,options):apiRequest(url,options),[guest]);
+ useEffect(()=>{let active=true;request('/api/preferences').then(r=>{if(active){setPrefs(r.preferences);setAvailable(true)}}).catch(()=>toast.error('Profile and appearance settings could not load. Reload to try again.')).finally(()=>{if(active)setReady(true)});return()=>{active=false}},[request]);
+ const save=useCallback(async(key:string,value:Record<string,string|boolean>)=>{await request('/api/preferences',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});setPrefs(p=>({...p,[key]:value}))},[request]);
+ const upload=useCallback(async(file:File,background=false)=>{const blob=await preparePhoto(file,background);if(guest)return dataUrl(blob);const r=await apiRequest('/api/images',{method:'POST',headers:{'Content-Type':'image/jpeg'},body:blob});return r.path as string},[guest]);
+ const image=useCallback((path:unknown)=>typeof path==='string'&&path?(guest&&path.startsWith('data:image/jpeg;base64,')?path:!guest?'/api/images?path='+encodeURIComponent(path):''):'',[guest]);
+ const dashboard=prefs.dashboard||{};const theme=THEMES.find(t=>t.id===dashboard.theme)||THEMES[0];const background=image(dashboard.photo)||wallpaperUrl(String(dashboard.wallpaper||''));
+ const style={'--primary':theme.accent,'--ring':theme.accent,'--atlas-wallpaper':background?`url("${background}")`:'none'} as CSSProperties;
+ return <Personalization.Provider value={{prefs,ready,available,save,upload,image,open:()=>setOpened(true)}}><div className={'personalized-shell'+(background?' has-wallpaper':'')} style={style}>{children}</div><Dialog open={opened} onOpenChange={setOpened}><DialogContent className="personalization-dialog"><DialogHeader><DialogTitle>My profile & appearance</DialogTitle><DialogDescription>{guest?'Saved only in this browser.':'Saved to your account across devices.'} Pictures are resized before upload.</DialogDescription></DialogHeader>{opened&&<Settings guest={guest}/>}</DialogContent></Dialog></Personalization.Provider>;
+}
+export function ProfileButton(){const {prefs,image,open}=usePersonalization();const photo=image(prefs.profile?.photo);return <button className="avatar profile-account-button" aria-label="My profile and dashboard appearance" onClick={open}>{photo?<img src={photo} alt=""/>:<UserRound size={20}/>}</button>}
+function Settings({guest}:{guest:boolean}){
+ const {prefs,save,upload,image,available}=usePersonalization();const profile=prefs.profile||{};const dashboard=prefs.dashboard||{};
+ const [name,setName]=useState(String(profile.name||'')),[bio,setBio]=useState(String(profile.bio||'')),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const run=async(action:()=>Promise<void>)=>{setBusy(true);setError('');try{await action()}catch(e){setError(e instanceof Error?e.message:'Unable to save.')}finally{setBusy(false)}};
+ const photo=image(profile.photo);
+ return <div className="personalization-content">
+  {error&&<p role="alert" className="error-banner">{error}</p>}
+  {!available&&<p role="alert">Settings are unavailable. Reload before making changes.</p>}
+  <section><h3><UserRound size={18}/> My profile</h3><div className="account-photo-row"><span className="account-photo">{photo?<img src={photo} alt="Your profile"/>:<UserRound size={34}/>}</span><div><label className="outline-button photo-picker"><Camera size={16}/> Add profile picture<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy||!available} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void run(async()=>{const path=await upload(f);await save('profile',{name,bio,photo:path})})}}/></label>{photo&&<button className="text-button" disabled={busy} onClick={()=>void run(()=>save('profile',{name,bio,photo:''}))}>Remove picture</button>}</div></div>
+  <label className="field">Display name<input value={name} maxLength={100} onChange={e=>setName(e.target.value)}/></label><label className="field spaced">About me<textarea value={bio} maxLength={500} onChange={e=>setBio(e.target.value)}/></label><button className="primary-button spaced" disabled={busy||!available} onClick={()=>void run(async()=>{await save('profile',{name,bio,photo:String(profile.photo||'')});toast.success('Profile saved')})}>{busy?'Saving…':'Save profile'}</button></section>
+  <section><h3><Palette size={18}/> Dashboard appearance</h3><p className="muted">Keep your preferred light or dark mode. Choose an accent and an optional picture.</p><div className="theme-presets">{THEMES.map(t=><button key={t.id} className="theme-preset" aria-pressed={(dashboard.theme||'atlas')===t.id} disabled={busy||!available} onClick={()=>void run(()=>save('dashboard',{theme:t.id,wallpaper:String(dashboard.wallpaper||''),photo:String(dashboard.photo||'')}))}><span style={{background:t.accent}}/>{t.label}</button>)}</div>
+  <div className="wallpaper-grid"><button className="wallpaper-option no-wallpaper" disabled={busy||!available} aria-pressed={!dashboard.wallpaper&&!dashboard.photo} onClick={()=>void run(()=>save('dashboard',{theme:String(dashboard.theme||'atlas'),wallpaper:'',photo:''}))}>No picture</button>{WALLPAPERS.map(w=><div key={w.id}><button className="wallpaper-option" disabled={busy||!available} aria-pressed={dashboard.wallpaper===w.id&&!dashboard.photo} onClick={()=>void run(()=>save('dashboard',{theme:String(dashboard.theme||'atlas'),wallpaper:w.id,photo:''}))}><img loading="lazy" src={wallpaperUrl(w.id,360)} alt=""/><span>{w.label}</span></button><a className="photo-credit" href={w.href} target="_blank" rel="noreferrer">{w.credit} / Unsplash</a></div>)}</div>
+  <label className="outline-button photo-picker"><Camera size={16}/> Upload dashboard picture<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy||!available} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void run(async()=>{const path=await upload(f,true);await save('dashboard',{theme:String(dashboard.theme||'atlas'),wallpaper:'',photo:path})})}}/></label>{dashboard.photo&&<p className="muted">Your uploaded picture is selected.</p>}<p className="muted">JPEG, PNG or WebP, up to 15 MB. {guest?'Guest pictures stay on this device.':'Uploaded pictures are private to your account.'}</p></section>
+ </div>;
+}
+export function PersonPhoto({id,name}:{id:string;name:string}){
+ const {prefs,save,upload,image,available}=usePersonalization();const [busy,setBusy]=useState(false);const photo=image(prefs['person:'+id]?.photo);
+ const change=async(file?:File)=>{setBusy(true);try{await save('person:'+id,{photo:file?await upload(file):''});toast.success('Photo updated')}catch(e){toast.error(e instanceof Error?e.message:'Photo could not be saved')}finally{setBusy(false)}};
+ return <div className="person-photo-editor">{photo&&<img className="person-photo-preview" src={photo} alt={name}/>}<label className="outline-button photo-picker"><Camera size={16}/>{busy?'Saving photo…':'Add or change photo'}<input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy||!available} onChange={e=>{const f=e.target.files?.[0];e.target.value='';if(f)void change(f)}}/></label>{photo&&<button type="button" className="text-button" disabled={busy} onClick={()=>void change()}>Remove photo</button>}</div>;
+}

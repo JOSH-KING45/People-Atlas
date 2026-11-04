@@ -1,6 +1,6 @@
 // Supabase HTTP boundary double. SQL policies and RPC behavior have a separate PostgreSQL suite.
 export function cloudFixture(){
- const tables={people:[],sources:[],settings:[]}, files=new Map();
+ const tables={people:[],sources:[],settings:[],atlas_preferences:[]}, files=new Map();
  const client={
   from(table){
    const filters=[];let remove=false,columns='*';
@@ -11,7 +11,7 @@ export function cloudFixture(){
     order(){return query},limit(){return query},
     async upsert(row){
      const key=table==='settings'?'owner':'id';
-     const old=tables[table].find(item=>item[key]===row[key]);
+     const old=tables[table].find(item=>table==='atlas_preferences'?item.owner===row.owner&&item.key===row.key:item[key]===row[key]);
      if(old)Object.assign(old,row);else tables[table].push({...row});
      return {error:null};
     },
@@ -35,6 +35,7 @@ export function cloudFixture(){
    return {data};
   },
   storage:{from:()=>({
+   upload:async(key,bytes)=>{files.set(key,bytes);return {error:null}},
    createSignedUploadUrl:async key=>({data:{signedUrl:'https://storage.test/upload/'+key}}),
    info:async key=>({data:files.has(key)?{metadata:{size:files.get(key).length}}:null}),
    createSignedUrl:async key=>({data:{signedUrl:'https://storage.test/download/'+key}}),

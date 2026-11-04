@@ -1,12 +1,13 @@
 "use client";
 import {useId,useState} from 'react';
+import {usePersonalization,PersonPhoto} from './personalization';
 import {Plus,X,Users} from 'lucide-react';
 import {CORE,type Person,keyName,birthdayParts,addBirthYear} from '@/lib/people';
 import {meaningful} from '@/lib/field-filters';
 import {Select,SelectContent,SelectItem,SelectTrigger,SelectValue} from '@/components/ui/select';
 import {Empty,EmptyHeader,EmptyTitle,EmptyDescription,EmptyMedia} from '@/components/ui/empty';
 export function Choose({value,onChange,options,label,className=''}:{value:string;onChange:(v:string)=>void;options:{value:string;label:string}[];label:string;className?:string}){return <Select value={value} onValueChange={onChange}><SelectTrigger aria-label={label} className={'choose '+className}><SelectValue placeholder={label}/></SelectTrigger><SelectContent>{options.map(o=><SelectItem value={o.value} key={o.value}>{o.label}</SelectItem>)}</SelectContent></Select>}
-export function Initials({name}:{name:string}){const colors=['blue','teal','amber','purple'];const index=[...name].reduce((a,c)=>a+c.charCodeAt(0),0)%4;return <span className={'person-avatar '+colors[index]}>{name.trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}</span>}
+export function Initials({name,personId}:{name:string;personId?:string}){const {prefs,image}=usePersonalization();const photo=personId?image(prefs['person:'+personId]?.photo):'';const colors=['blue','teal','amber','purple'];const index=[...name].reduce((a,c)=>a+c.charCodeAt(0),0)%4;return <span className={'person-avatar '+colors[index]}>{photo?<img src={photo} alt=""/>:name.trim().split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'?'}</span>}
 export function EmptyPeople({title='Your circle starts with a name.',description='Add a note or import a file to create your first profiles.',children}:{title?:string;description?:string;children?:React.ReactNode}){return <Empty className="empty-state"><EmptyHeader><EmptyMedia variant="icon"><Users/></EmptyMedia><EmptyTitle>{title}</EmptyTitle><EmptyDescription>{description}</EmptyDescription></EmptyHeader>{children}</Empty>}
 export function PersonEditor({person,onChange,original,review=false}:{person:Person;onChange:(p:Person)=>void;original?:Person;review?:boolean}){
  const [custom,setCustom]=useState(''),[expanded,setExpanded]=useState(false),[approved,setApproved]=useState<string[]>([]);const editorId=useId();
@@ -14,6 +15,7 @@ export function PersonEditor({person,onChange,original,review=false}:{person:Per
  const fields=[...new Set([...(expanded?CORE:[]),...Object.keys(person.fields)])];
  const put=(key:string,value:string)=>{let next={...person.fields,[key]:value};let provenance=person.calculatedFields||[];if(key==='Age'||key==='Birthday')delete next['Estimated birth year'];if(key==='Age'&&provenance.includes('Birthday')){const b=birthdayParts(next.Birthday||'');if(b){next.Birthday=`${String(b.month).padStart(2,'0')}-${String(b.day).padStart(2,'0')}`;next=addBirthYear(next)}}if(key==='Birthday')provenance=provenance.filter(k=>k!=='Birthday');setApproved(a=>a.filter(k=>k!==key&&!(key==='Age'&&['Birthday','Estimated birth year'].includes(k))));onChange({...person,fields:next,calculatedFields:provenance})};
  return <div className="person-editor">
+  {!review&&person.version&&<PersonPhoto id={person.id} name={person.name}/>}
   <label className="field full"><span>Name <b>*</b></span><input value={person.name} maxLength={200} onChange={e=>onChange({...person,name:e.target.value})} placeholder="Full name"/></label>
   {calculated.Birthday!==person.fields.Birthday&&<p className="muted">Birthday on save: {calculated.Birthday} (year calculated from age).</p>}
   {calculated['Estimated birth year']&&<p className="muted">Estimated birth year: {calculated['Estimated birth year']}. Without a day and month, the actual year may be one year earlier.</p>}

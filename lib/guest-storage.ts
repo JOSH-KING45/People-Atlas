@@ -22,6 +22,12 @@ function body(options?:RequestInit){if(typeof options?.body!=='string')return{};
 
 export async function guestApiRequest(url:string,options?:RequestInit){
  const endpoint=new URL(url,location.origin);const method=options?.method||'GET';
+ if(endpoint.pathname==='/api/preferences'&&method==='GET'){
+  const saved=await transaction<any>('settings','readonly',(store,finish,fail)=>requestResult(store.get('preferences'),finish,fail));return{preferences:saved?.value||{}};
+ }
+ if(endpoint.pathname==='/api/preferences'&&method==='POST'){
+  const input=body(options);return transaction<any>('settings','readwrite',(store,finish,fail)=>{const get=store.get('preferences');get.onerror=()=>fail(get.error);get.onsuccess=()=>{const value={...(get.result?.value||{}),[input.key]:input.value};requestResult(store.put({key:'preferences',value}),()=>finish(input),fail)}});
+ }
  if(endpoint.pathname==='/api/people'&&method==='GET'){
   const people=await transaction<Person[]>('people','readonly',(store,finish,fail)=>requestResult(store.getAll(),finish,fail));
   return{people:people.sort((a,b)=>a.name.localeCompare(b.name))};
