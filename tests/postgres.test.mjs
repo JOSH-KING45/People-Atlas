@@ -10,7 +10,7 @@ test('migrations enforce PostgreSQL ownership, partial conflicts, atomic rollbac
   create function auth.uid() returns uuid language sql as $$select current_setting('test.uid',true)::uuid$$;
   grant usage on schema auth to authenticated;
   create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);`);
- for(const migration of ['202611030001_atlas','202611030002_storage','202611030003_ai_quota','20261104002300_atlas_personalization'])
+ for(const migration of ['202611030001_atlas','202611030002_storage','202611030003_ai_quota','20261104002300_atlas_personalization','20261104014115_atlas_speech_limits'])
   await pg.exec(await readFile(new URL('../supabase/migrations/'+migration+'.sql',import.meta.url),'utf8'));
  await pg.query('insert into auth.users values ($1),($2)',[a,b]);
  const save=async(owner,rows)=>(await pg.query('select * from public.atlas_save_people($1,$2)',[owner,JSON.stringify(rows)])).rows;
@@ -43,5 +43,13 @@ test('migrations enforce PostgreSQL ownership, partial conflicts, atomic rollbac
  await pg.query("select set_config('test.uid',$1,false)",[a]);assert.equal((await pg.query('select value from atlas_preferences')).rows[0].value.done,true);
  await pg.exec('reset role');
  const images=(await pg.query("select * from storage.buckets where id='atlas-images'")).rows[0];assert.equal(images.public,false);assert.equal(Number(images.file_size_limit),2000000);assert.deepEqual(images.allowed_mime_types,['image/jpeg']);
+ await pg.exec('set role service_role');
+ for(let i=0;i<10;i++)assert.equal((await pg.query('select atlas_claim_speech_request(10) as ok')).rows[0].ok,true);
+ assert.equal((await pg.query('select atlas_claim_speech_request(10) as ok')).rows[0].ok,false);
+ await pg.exec('reset role');await pg.query("update atlas_speech_window set requests=0,used_seconds=6000 where period='hour'");await pg.query("update atlas_speech_window set requests=0 where period='minute'");
+ await pg.exec('set role service_role');assert.equal((await pg.query('select atlas_claim_speech_request(10) as ok')).rows[0].ok,false);
+ await pg.exec('reset role');await pg.query("update atlas_speech_window set used_seconds=0 where period='hour'");await pg.query("update atlas_speech_window set used_seconds=24000 where period='day'");
+ await pg.exec('set role service_role');assert.equal((await pg.query('select atlas_claim_speech_request(10) as ok')).rows[0].ok,false);
+ await pg.exec('reset role;set role anon');await assert.rejects(pg.query('select atlas_claim_speech_request(10)'));await assert.rejects(pg.query('select * from atlas_speech_window'));await pg.exec('reset role');
  assert.equal(bucket.public,false);assert.equal(Number(bucket.file_size_limit),15*1024*1024);
 });

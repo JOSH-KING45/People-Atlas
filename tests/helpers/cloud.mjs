@@ -24,6 +24,7 @@ export function cloudFixture(){
    };return query;
   },
   async rpc(name,{account_id,drafts}={}){
+   if(name==='atlas_claim_speech_request')return {data:true};
    if(name==='atlas_claim_ai_request')return {data:true};
    if(name!=='atlas_save_people')throw Error('Unexpected RPC');
    const data=[];
