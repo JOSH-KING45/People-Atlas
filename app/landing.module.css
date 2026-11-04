@@ -4,3 +4,25 @@
 @media(max-width:400px){.header nav{gap:12px;font-size:12px}.smallCta svg{display:none}.brand>span{width:31px;height:31px}.brand{gap:7px;font-size:16px}.actions{gap:10px}.primary{padding-inline:16px;font-size:13px;gap:12px}.storageOptions{grid-template-columns:1fr}.preview{padding:15px}.intro .eyebrow{font-size:10px;letter-spacing:0}.previewTop{gap:8px}}
 
 .continuePrompt{position:fixed;inset:0;margin:auto;width:min(420px,calc(100% - 36px));max-height:calc(100dvh - 36px);overflow:auto;padding:32px;border:1px solid var(--border);border-radius:16px;background:var(--card);color:var(--foreground);box-shadow:0 24px 80px #101d3840;text-align:center}.continuePrompt::backdrop{background:#101d3880;backdrop-filter:blur(4px)}.continuePrompt>svg{color:var(--primary);margin:0 auto 18px}.continuePrompt h2{font-size:28px;letter-spacing:-.04em}.continuePrompt p{color:var(--muted-foreground);font-size:15px;line-height:1.8;margin:14px 0 24px}.continuePrompt .primary{display:flex;text-decoration:none}.stayButton{display:block;width:100%;min-height:44px;margin-top:10px;border:0;border-radius:8px;background:transparent;color:var(--muted-foreground);font-size:14px}.stayButton:hover{background:var(--muted)}
+
+@keyframes landingEnter{from{opacity:0;translate:0 14px}to{opacity:1;translate:0 0}}
+@keyframes noteAppear{from{opacity:0;scale:.97}to{opacity:1;scale:1}}
+@media(prefers-reduced-motion:no-preference){
+ .intro{animation:landingEnter 550ms ease-out both}
+ .preview{animation:landingEnter 650ms 100ms ease-out both}
+ .note{animation:noteAppear 500ms 200ms ease-out both}
+ .profile{animation:noteAppear 500ms 380ms ease-out both}
+ .continuePrompt[open]{animation:landingEnter 220ms ease-out both}
+ .continuePrompt[open]::backdrop{animation:noteAppear 180ms ease-out both}
+ .page :is(a,button)>svg{transition:translate 180ms ease,rotate 220ms ease,scale 180ms ease}
+ .page :is(a,button):is(:hover,:focus-visible)>svg{translate:3px 0}
+ .brand:is(:hover,:focus-visible) svg{rotate:-8deg;scale:1.08}
+ .primary,.smallCta{transition:translate 180ms ease,box-shadow 180ms ease,filter 180ms ease}
+ .primary:is(:hover,:focus-visible){box-shadow:0 6px 18px color-mix(in srgb,var(--blue) 20%,transparent)}
+ .primary:active,.smallCta:active{translate:0 1px}
+ .steps article>svg{transition:rotate 220ms ease,scale 220ms ease}
+ .steps article:hover>svg{rotate:-7deg;scale:1.1}
+ .storageOptions a>svg{transition:translate 180ms ease}
+ .continuePrompt .primary>svg{transition:translate 180ms ease}
+ .continuePrompt .primary:is(:hover,:focus-visible)>svg{translate:3px 0}
+}

@@ -226,3 +226,28 @@ h2,.profile-section h3,.profile-history h3{font-weight:600}
  .review-card{padding:14px}.sheet-profile-head{padding:16px}.sheet-profile-head .person-avatar{width:44px;height:44px;font-size:1rem}
 }
 @media(prefers-reduced-motion:reduce){.review-card{animation:none}.person-card:hover,.folder-card:hover{transform:none}}
+
+/* Shared motion: feedback follows interaction and respects device preferences. */
+@keyframes atlas-soft-enter{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
+@keyframes atlas-loading-breathe{0%,100%{opacity:.5}50%{opacity:1}}
+@media(prefers-reduced-motion:no-preference){
+ .sign-in-card{animation:atlas-soft-enter 360ms ease-out both}
+ .page-body{animation:atlas-soft-enter 240ms ease-out both}
+ :is(.primary-button,.outline-button,.quiet-button,.icon-button,.text-button,[data-slot=sidebar-menu-button])>svg.lucide:not(.animate-spin){transition:translate 180ms ease,rotate 220ms ease,scale 180ms ease;transform-origin:center}
+ :is(.primary-button,.outline-button,.text-button):is(:hover,:focus-visible):not(:disabled)>svg.lucide:not(.animate-spin){translate:2px 0}
+ :is(.icon-button,[data-slot=sidebar-menu-button]):is(:hover,:focus-visible):not(:disabled)>svg.lucide:not(.animate-spin){rotate:-7deg;scale:1.1}
+ .theme-toggle:is(:hover,:focus-visible)>svg.lucide{rotate:22deg}
+ :is(.person-card,.folder-card){transition:translate 200ms ease,box-shadow 200ms ease,border-color 200ms ease}
+ :is(.person-card,.folder-card):focus-within{box-shadow:0 6px 20px #14284612}
+ .profile-row>svg.lucide{transition:translate 180ms ease}
+ .profile-row:is(:hover,:focus-visible)>svg.lucide{translate:3px 0}
+ .search-field{transition:box-shadow 180ms ease,border-color 180ms ease}
+ .search-field:focus-within{border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 14%,transparent)}
+ .loading-rows>*{animation:atlas-loading-breathe 1400ms ease-in-out infinite}
+ .loading-rows>*:nth-child(2){animation-delay:120ms}.loading-rows>*:nth-child(3){animation-delay:240ms}
+ .view-toggle button{transition:background-color 180ms ease,color 180ms ease}
+}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+ :is(.person-card,.folder-card):hover{translate:0 -3px}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{translate:none!important;rotate:none!important;scale:none!important}}
