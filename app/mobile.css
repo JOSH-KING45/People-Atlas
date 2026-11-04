@@ -1,0 +1,63 @@
+/* Small-screen overrides are kept separate so the desktop layout stays stable. */
+@media(max-width:1024px){
+ [data-slot=dialog-content]:not(.guided-tour){top:calc(var(--atlas-visible-top,0px) + var(--atlas-visible-height,100dvh)/2);max-height:calc(var(--atlas-visible-height,100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overscroll-behavior:contain}
+ .crop-dialog,.personalization-dialog,.transcript-dialog,.import-dialog{overflow-y:auto;scroll-padding:24px;scrollbar-gutter:stable}
+ .settings-scroll,.review-scroll,.sheet-scroll{min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+ [data-slot=dialog-content]>button:last-child,[data-slot=sheet-content]>button:last-child{min-height:44px;min-width:44px;display:grid;place-items:center;top:4px;right:4px}
+}
+@media(max-width:767px){
+ .workspace{max-width:100%;min-width:0}
+ .topbar{height:auto;min-height:62px;padding:calc(8px + env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) 8px max(12px,env(safe-area-inset-left));gap:8px}
+ .topbar .breadcrumb,.topbar-right{flex-shrink:0}
+ .global-search{min-width:0;gap:5px}.global-search input{min-width:0;width:100%}.global-search>svg{flex-shrink:0}
+ .topbar-right .profile-account-button{display:inline-flex;width:44px;height:44px}
+ .topbar .theme-toggle,.topbar [data-slot=sidebar-trigger],.global-search>.icon-button{min-height:44px;min-width:44px}
+ .global-search>.icon-button{padding:8px}
+ .page-body{padding:22px max(14px,env(safe-area-inset-right)) calc(100px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));max-width:100%;min-width:0}
+ .page-title{gap:16px;align-items:flex-start}.page-title>div{max-width:100%}.page-title h1{font-size:clamp(1.5rem,6vw,1.9rem);overflow-wrap:anywhere}
+ .page-title .action-row{width:100%;gap:8px}.page-title .action-row>button{flex:1 1 125px}
+ .workspace :is(.primary-button,.outline-button,.quiet-button,.text-button,.icon-button,.favourite-star,.view-toggle button,[data-slot=tabs-trigger]){min-height:44px}
+ .workspace :is(.icon-button,.favourite-star,.view-toggle button){min-width:44px}
+ input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select{font-size:16px!important}
+ .panel,.stats,.composer,.people-results,.directory,.directory-toolbar{min-width:0;max-width:100%}
+ .panel{padding:18px}.stats>div{min-width:0;padding:16px 12px;gap:5px}.stats span{font-size:12px;overflow-wrap:anywhere}.stats strong{font-size:1.5rem}.stats svg{width:18px}
+ .below-grid,.files-grid,.insights-grid{grid-template-columns:minmax(0,1fr)}
+ .composer .section-heading{align-items:flex-start;gap:12px}.composer .choose{min-width:0;max-width:100%}.composer textarea{width:100%;min-height:160px}
+ .directory-toolbar{gap:8px}.directory-toolbar .search-field{min-width:0;flex-basis:100%}.directory-toolbar>.choose{min-width:0;flex:1 1 130px}.view-toggle{flex-shrink:0}
+ .person-card-header{min-width:0;padding-right:42px}.person-card-header>span{min-width:0}.person-card-header strong{overflow-wrap:anywhere}.person-card-details dd,.person-card-details dt{overflow-wrap:anywhere;min-width:0}.people-results.list .person-card{padding-right:16px}.people-results.list .person-card-header{padding-right:44px}.favourite-star{right:5px;top:5px}
+ .mobile-nav{padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));min-height:70px}
+ html[data-atlas-keyboard=open] .mobile-nav{display:none}
+ [data-slot=sidebar][data-mobile=true]{width:min(86vw,320px);max-width:calc(100vw - 24px);height:var(--atlas-visible-height,100dvh);padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+ [data-slot=sidebar][data-mobile=true] [data-slot=sidebar-content]{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+ [data-slot=sidebar][data-mobile=true] [data-slot=sidebar-footer]{flex-shrink:0}
+ [data-slot=dialog-content]:not(.guided-tour){width:calc(100vw - 24px);padding:18px;gap:14px;min-width:0;scroll-padding:22px}
+ [data-slot=dialog-content] [data-slot=dialog-header]{text-align:left;padding-right:25px}
+ [data-slot=dialog-footer]{gap:9px;flex-wrap:wrap}[data-slot=dialog-footer]>button{min-height:44px;flex:1 1 140px}
+ .review-dialog .review-scroll,.settings-dialog .settings-scroll{min-height:80px;flex:1;overflow-y:auto}
+ .review-guidance{max-height:20vh;overflow:auto;flex-shrink:0}.review-card{padding:14px}.review-actions{flex-shrink:0;gap:8px;padding-top:12px}
+ .profile-sheet{width:100%!important;max-width:100vw!important;height:var(--atlas-visible-height,100dvh)!important;top:var(--atlas-visible-top,0px);bottom:auto;min-height:0;padding-top:env(safe-area-inset-top)}
+ .profile-sheet [data-slot=sheet-header]{padding:18px 52px 12px 18px}.sheet-profile-head{padding:14px 18px}.sheet-actions{padding:12px 18px max(12px,env(safe-area-inset-bottom));gap:8px;flex-shrink:0;background:var(--card)}
+ .profile-tabs [data-slot=tabs-list]{overflow-x:auto;max-width:100%;height:auto;justify-content:flex-start;scrollbar-width:thin}.profile-tabs [data-slot=tabs-trigger]{flex:0 0 auto;padding-inline:12px}
+ .crop-controls input[type=range]{min-height:44px}.crop-preview{max-height:32dvh}.crop-preview.portrait-crop{width:min(100%,240px)}.crop-editor .action-row{gap:8px;justify-content:flex-end}.crop-editor .action-row>button{min-height:44px;flex:1 1 100px}
+ .personalization-content{min-width:0}.account-photo-row{gap:12px}.account-photo-row>div{min-width:0;flex:1}.account-photo-row .photo-picker{max-width:100%;min-height:44px}.account-photo{width:70px;height:70px}
+ .theme-presets{gap:10px}.theme-preset{min-height:44px;flex:1 1 120px}.wallpaper-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.wallpaper-option{height:100px}.photo-credit{overflow-wrap:anywhere;min-height:30px}
+ .voice-capture{min-width:0}.voice-capture .action-row{width:100%;gap:10px}.voice-capture .action-row>:is(button,.photo-picker){min-height:44px;flex:1 1 140px}.voice-method select,.voice-language select{min-height:44px;min-width:0;max-width:100%}.voice-language{max-width:100%;width:100%;align-items:flex-start;flex-wrap:wrap}.voice-language select{flex:1}
+ .recording-preview{min-width:0;width:100%;padding:12px}.recording-preview audio{width:100%;min-width:0;max-width:100%}.recording-preview a{white-space:normal;overflow-wrap:anywhere}.transcript-dialog textarea{min-height:140px;max-height:35dvh}.transcript-dialog .action-row>button{flex:1 1 180px;min-height:44px}
+ .sign-in-page{min-height:100svh;padding:24px 16px calc(24px + env(safe-area-inset-bottom))}.sign-in-card{width:100%;max-width:480px;padding:28px 22px}.sign-in-card .primary-button,.sign-in-card .outline-button{min-height:48px}
+}
+@media(max-width:359px){
+ .topbar{gap:4px;padding-inline:8px}.topbar-right{gap:2px}.global-search>svg{display:none}.global-search input{font-size:16px}.topbar .theme-toggle{min-width:40px}.topbar-right .profile-account-button{width:40px;min-width:40px}
+ .page-body{padding-inline:10px}.panel{padding:14px}.stats>div{padding:14px 8px}.stats svg{display:none}.stats>div{grid-template-columns:1fr}.stats strong{font-size:1.35rem}
+ .section-heading{flex-wrap:wrap}.composer .section-heading .choose{width:100%}.person-card{padding:16px}.crop-dialog{padding:14px!important}.account-photo-row{flex-wrap:wrap}
+}
+@media(max-height:520px) and (max-width:1024px){
+ .crop-preview.portrait-crop{width:140px}.crop-preview{max-height:28dvh}.crop-controls{margin-block:10px;gap:4px}.crop-controls label{grid-template-columns:140px 1fr;gap:8px}.crop-dialog{gap:8px!important}
+ [data-slot=dialog-content]:not(.guided-tour){overflow-y:auto}.guided-tour{max-height:75dvh!important}.guided-tour .tour-copy{max-height:30dvh;overflow:auto}
+}
+@media(max-width:767px){
+ [data-slot=sidebar][data-mobile=true] [data-slot=sidebar-menu-button]{min-height:48px;font-size:15px;padding-inline:16px}
+ :is([data-slot=dialog-content],[data-slot=sheet-content]) :is(button,.photo-picker,.text-button){min-height:44px}
+ [data-slot=select-item]{min-height:44px}
+ .topbar-right .profile-account-button,.topbar .theme-toggle{width:44px;min-width:44px}
+ .sheet-scroll{min-height:0;overscroll-behavior:contain;scroll-padding-block:20px}
+}
