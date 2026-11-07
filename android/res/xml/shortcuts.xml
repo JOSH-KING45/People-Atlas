@@ -1,0 +1,8 @@
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="app_lock" android:enabled="true"
+        android:icon="@drawable/atlas_icon" android:shortcutShortLabel="@string/app_lock_shortcut">
+        <intent android:action="ng.com.mypeople.atlas.test.APP_LOCK"
+            android:targetPackage="ng.com.mypeople.atlas.test"
+            android:targetClass="ng.com.mypeople.atlas.MainActivity" />
+    </shortcut>
+</shortcuts>

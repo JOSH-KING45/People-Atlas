@@ -19,3 +19,7 @@ Set these environment variables before running `android/build-apk.sh`:
 The optional first argument sets the output APK path. Keep signing keys private. The test application ID is `ng.com.mypeople.atlas.test`. Upgrades to that package require the same signing key and a higher version code.
 
 Before releasing an APK signed with a new certificate, add that certificate's SHA-256 fingerprint and the exact application ID to the site's `public/.well-known/assetlinks.json`. Test launch, Google sign-in, guest storage, uploads, and voice capture on an Android device.
+
+## Optional launcher lock
+
+On Android 11 or later, long-press the People Atlas icon, select **App lock**, and choose **Turn app lock on**. Android handles authentication using an enrolled strong biometric or the device screen lock. The setting is off by default and has no idle timer. When enabled it gates launches through the People Atlas icon. Turning it off also requires authentication. Open browser tabs and direct website visits are outside the launcher lock.

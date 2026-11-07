@@ -8,7 +8,7 @@ set -euo pipefail
 : "${ATLAS_SIGNING_ALIAS:?Set ATLAS_SIGNING_ALIAS to the key alias}"
 
 cd "$(dirname "$0")"
-output=$(realpath -m "${1:-build/People-Atlas-v1.0.0-test.apk}")
+output=$(realpath -m "${1:-build/People-Atlas-v1.1.0-test.apk}")
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 mkdir -p "$work"/{classes,dex,gen} "$(dirname "$output")"
