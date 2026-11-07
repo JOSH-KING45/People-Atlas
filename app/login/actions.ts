@@ -1,4 +1,5 @@
 'use server';
+import {accountPolicies} from '@/lib/account-policies';
 import {redirect} from 'next/navigation';
 import {sessionClient} from '@/lib/supabase';
 export async function authenticate(form:FormData) {
@@ -6,6 +7,8 @@ export async function authenticate(form:FormData) {
   if(!email || !password || password.length>256) redirect('/login?status=invalid');
   const auth=(await sessionClient()).auth;
   if(form.get('action')==='register'){
+    const policies=accountPolicies();
+    if(policies&&form.get('policyVersion')!==policies.version)redirect('/login?status=policies');
     const {data,error}=await auth.signUp({email,password});
     if(error) redirect('/login?status=invalid');
     if(!data.session) redirect('/login?status=confirm');

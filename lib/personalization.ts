@@ -1,3 +1,4 @@
+import {unsplashCredit,unsplashImage} from './unsplash';
 export type Preferences=Record<string,Record<string,string|boolean>>;
 export const THEMES=[{id:'atlas',label:'Atlas blue',accent:'#315bea'},{id:'forest',label:'Forest',accent:'#167565'},{id:'ocean',label:'Ocean',accent:'#146a99'},{id:'plum',label:'Plum',accent:'#8050ab'},{id:'terracotta',label:'Terracotta',accent:'#ae5034'}];
 export const WALLPAPERS=[
@@ -15,7 +16,12 @@ export function validatePreference(key:unknown,value:unknown,owner:string){
  const image=(p:unknown)=>{if(p===''||p===undefined)return '';if(!ownedImage(p,owner))throw new Error('Choose one of your own uploaded images.');return p};
  if(key==='tour'){if(v.done!==true)throw new Error('Invalid tour preference.');out={done:true}}
  else if(key==='profile'){if(typeof v.name!=='string'||v.name.length>100||typeof v.bio!=='string'||v.bio.length>500)throw new Error('Use a name up to 100 characters and bio up to 500.');out={name:v.name.trim(),bio:v.bio.trim(),photo:image(v.photo)}}
- else if(key==='dashboard'){if(!THEMES.some(t=>t.id===v.theme)||typeof v.wallpaper!=='string'||v.wallpaper!==''&&!WALLPAPERS.some(p=>p.id===v.wallpaper))throw new Error('Choose a preset theme and background.');out={theme:v.theme as string,wallpaper:v.wallpaper,photo:image(v.photo)}}
+ else if(key==='dashboard'){if(!THEMES.some(t=>t.id===v.theme)||typeof v.wallpaper!=='string'||v.wallpaper!==''&&!WALLPAPERS.some(p=>p.id===v.wallpaper))throw new Error('Choose a preset theme and background.');out={theme:v.theme as string,wallpaper:v.wallpaper,photo:image(v.photo)};
+  if(v.unsplashImage){
+   const url=unsplashImage(v.unsplashImage),credit=unsplashCredit(v.unsplashCredit);
+   if(!url||!credit||typeof v.unsplashAuthor!=='string'||!v.unsplashAuthor.trim()||v.unsplashAuthor.length>120||out.photo||out.wallpaper)throw new Error('Choose a valid Unsplash wallpaper.');
+   Object.assign(out,{unsplashImage:url,unsplashCredit:credit,unsplashAuthor:v.unsplashAuthor.trim()});
+  }}
  else {if(v.favorite!==undefined&&typeof v.favorite!=='boolean')throw new Error('Invalid favourite preference.');out={photo:image(v.photo),favorite:v.favorite===true}};
  return {key,value:out};
 }
