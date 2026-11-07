@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ng.com.mypeople.atlas.test",
+      "sha256_cert_fingerprints": [
+        "28:97:FF:15:89:39:D0:89:A7:9A:A0:85:EB:90:8C:C4:E0:28:1E:21:29:8E:84:DE:76:32:B6:FC:C1:5A:52:32"
+      ]
+    }
+  }
+]
