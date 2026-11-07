@@ -21,7 +21,7 @@ export default function DeleteAccountForm() {
       });
       window.location.replace('/');
     } catch (failure) {
-      setError(failure instanceof RequestError && failure.status === 409 ? failure.message : 'Account deletion could not be confirmed. Try again or sign in to check your account.');
+      setError(failure instanceof RequestError && [409, 503].includes(failure.status) ? failure.message : 'Account deletion could not be confirmed. Try again or sign in to check your account.');
       setBusy(false);
     }
   }

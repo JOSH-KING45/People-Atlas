@@ -1,7 +1,9 @@
+import {uploadTransition} from '@/lib/upload-fence';
 import {afterId,listPage,pageSize} from '@/lib/list-page';
 import {api,body,json,owner,ApiError} from '@/lib/server';
 import {adminClient} from '@/lib/supabase';
 import {z} from 'zod';
+export const maxDuration=60;
 const bucketName='atlas-originals';
 const nameSchema=z.string().trim().min(1).max(240).regex(/^[^\/\\\x00-\x1f]+\.(pdf|docx|csv|tsv|xlsx|txt|json)$/i);
 const upload=z.object({name:nameSchema,size:z.number().int().min(0).max(15*1024*1024)});
@@ -29,6 +31,7 @@ export function POST(request:Request){return api(async()=>{
  if(!metadata.success)throw new ApiError(400,'Choose a supported file up to 15 MB.');
  const client=adminClient(),bucket=client.storage.from(bucketName);
  if(input.action==='prepare'){
+  await uploadTransition(account,'original',client);
   const id=crypto.randomUUID();
   const {data,error}=await bucket.createSignedUploadUrl(account+'/'+id);
   if(error)throw error;

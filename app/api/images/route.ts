@@ -1,12 +1,15 @@
+import {uploadTransition} from '@/lib/upload-fence';
 import {adminClient} from '@/lib/supabase';
 import {api,guard,json,owner,ApiError} from '@/lib/server';
 import {ownedImage} from '@/lib/personalization';
 export const runtime='nodejs';
+export const maxDuration=60;
 export function POST(request:Request){return api(async()=>{
  const u=await owner();guard(request);
  if(request.headers.get('content-type')!=='image/jpeg')throw new ApiError(400,'Choose a JPEG, PNG or WebP photo using the image picker.');
  const bytes=new Uint8Array(await request.arrayBuffer());
  if(bytes.length>2_000_000||bytes.length<4||bytes[0]!==255||bytes[1]!==216||bytes[2]!==255||bytes.at(-2)!==255||bytes.at(-1)!==217)throw new ApiError(400,'Choose a valid photo smaller than 2 MB after resizing.');
+ await uploadTransition(u,'image');
  const path=`${u}/${crypto.randomUUID()}.jpg`;
  const {error}=await adminClient().storage.from('atlas-images').upload(path,bytes,{contentType:'image/jpeg',upsert:false});if(error)throw error;
  return json({path});

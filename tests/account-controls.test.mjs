@@ -6,6 +6,7 @@ test('account deletion rejects invalid and cross-site requests and uses only the
   const f = fixture({ 'fixture-session-id': 'verified-user', 'fixture-email': 'owner@example.com' });
   f.env.ATLAS_ACCOUNT_DELETION_ENABLED = 'true';
   f.env.ATLAS_SHARED_AUTH = 'false';
+  f.env.ATLAS_UPLOAD_FENCE_LIVE_AT = new Date(0).toISOString();
   const files = { 'atlas-originals': ['original', 'unfinished'], 'atlas-images': ['old.jpg'] };
   f.client.storage.from = name => ({
     list: async prefix => {
@@ -43,6 +44,7 @@ test('account deletion rejects invalid and cross-site requests and uses only the
 test('storage cleanup errors leave the identity available for retry', async () => {
   const f = fixture();
   f.env.ATLAS_SHARED_AUTH = 'false';
+  f.env.ATLAS_UPLOAD_FENCE_LIVE_AT = new Date(0).toISOString();
   f.client.storage.from = () => ({ list: async () => ({ error: new Error('Storage unavailable') }) });
   f.client.auth = { admin: { deleteUser: async () => assert.fail('Identity deleted before storage cleanup') } };
   await assert.rejects(f.load('lib/account-deletion.ts').deleteAtlasAccount('verified-user'), /Storage unavailable/);
