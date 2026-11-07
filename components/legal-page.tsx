@@ -13,13 +13,20 @@ function legalText(text: string) {
   });
 }
 
+export function LegalSections({ sections, heading: Heading = 'h2' }: {
+  sections: Section[];
+  heading?: 'h2' | 'h3';
+}) {
+  return sections.map(({ title, paragraphs }) => <section key={title}>
+    {title && <Heading>{title}</Heading>}
+    {paragraphs.map(paragraph => <p key={paragraph}>{legalText(paragraph.replace(/^- /, ''))}</p>)}
+  </section>);
+}
+
 export function LegalPage({ title, sections }: { title: string; sections: Section[] }) {
   return <main className="atlas-legal">
     <nav aria-label="People Atlas"><Link href="/">People Atlas</Link> · <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Use</Link></nav>
     <h1>{title}</h1>
-    {sections.map(({ title: heading, paragraphs }) => <section key={heading}>
-      {heading && <h2>{heading}</h2>}
-      {paragraphs.map(paragraph => <p key={paragraph}>{legalText(paragraph.replace(/^- /, ''))}</p>)}
-    </section>)}
+    <LegalSections sections={sections} />
   </main>;
 }

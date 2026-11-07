@@ -1,3 +1,4 @@
+import { AccountPolicyDocuments } from '@/components/account-policy-documents';
 import { redirect } from 'next/navigation';
 import { currentUser } from '@/app/account';
 import { AccountPolicyCheckbox } from '@/components/account-policy-checkbox';
@@ -14,6 +15,7 @@ export default async function AccountPoliciesPage({ searchParams }: { searchPara
   return <main className="sign-in-page"><section className="sign-in-card">
     <h1>Review People Atlas policies</h1>
     <p>Read the Privacy Policy and Terms of Use before continuing to your workspace.</p>
+    <AccountPolicyDocuments policies={policies} />
     {status && <p role="alert">Acceptance could not be saved. Check the box and try again.</p>}
     <form action={acceptPolicies}>
       <AccountPolicyCheckbox policies={policies} required />
