@@ -1,8 +1,9 @@
+import {readVcards} from './contact-import';
 import type {Person} from './people';
 import {keyName,normalizeFields,rowsFromGrid,newPersonId} from './people';
 import Papa from 'papaparse';
-export type ReadResult={text?:string;rows?:Record<string,unknown>[];people?:Person[];sheets?:{name:string;rows:Record<string,unknown>[]}[]};
-export async function readFile(file:File):Promise<ReadResult>{if(file.size>15*1024*1024)throw new Error('Choose a file smaller than 15 MB.');const ext=file.name.split('.').pop()?.toLowerCase();if(ext==='txt')return{text:await file.text()};if(ext==='json'){
+export type ReadResult={text?:string;rows?:Record<string,unknown>[];people?:Person[];contactImport?:boolean;sheets?:{name:string;rows:Record<string,unknown>[]}[]};
+export async function readFile(file:File):Promise<ReadResult>{if(file.size>15*1024*1024)throw new Error('Choose a file smaller than 15 MB.');const ext=file.name.split('.').pop()?.toLowerCase();if(ext==='vcf')return{people:readVcards(await file.text()),contactImport:true};if(ext==='txt')return{text:await file.text()};if(ext==='json'){
  let parsed:any;try{parsed=JSON.parse(await file.text())}catch{throw new Error('This JSON file is not valid. Check its formatting and try again.')}
  const arr=Array.isArray(parsed)?parsed:parsed?.people;
  if(!Array.isArray(arr))throw new Error('The JSON must contain a people array.');

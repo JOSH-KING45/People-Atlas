@@ -70,3 +70,30 @@ test('Google Calendar creation and updates keep stable IDs and report partial fa
  assert.equal(await sendBirthdays([sample],'fake-google-token',1),1);assert.equal(requests[1].options.method,'PATCH');assert.ok(requests[1].url.endsWith('/'+body.id));
  mock.mock.mockImplementation(async()=>new Response(null,{status:401}));await assert.rejects(sendBirthdays([sample],'fake-google-token',1),/Saved 0 of 1/);
 });
+
+test('vCard imports unfold lines and preserve contact details for review', async () => {
+ const {readFile}=fixture().load('lib/files.ts');
+ const data=[
+  'BEGIN:VCARD','VERSION:4.0','FN:Test Àbídún','item1.TEL;VALUE=uri:tel:+2348012345678',
+  'TEL:+2348098765432','EMAIL:test@example.test','ORG:Studio\\; Name;Research',
+  'NOTE:Met in Abuja\\nLikes long conver',' sations','PHOTO;ENCODING=b:opaque','END:VCARD',
+  'BEGIN:VCARD','VERSION:2.1','N:Okafor;Ada;;;','EMAIL:ada@example.test','END:VCARD',
+  'BEGIN:VCARD','FN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:Ada =C3=','=89ze','END:VCARD'
+ ].join('\r\n');
+ const {people,contactImport}=await readFile(new File([data],'contacts.VCF'));
+ assert.equal(contactImport,true);
+ assert.deepEqual(people.map(p=>p.name),['Test Àbídún','Ada Okafor','Ada Éze']);
+ assert.deepEqual(people[0].fields,{Workplace:'Studio; Name · Research',Phone:'+2348012345678','Phone 2':'+2348098765432',Email:'test@example.test'});
+ assert.equal(people[0].notes,'Met in Abuja\nLikes long conversations');
+ await assert.rejects(readFile(new File(['BEGIN:VCARD\nFN:Incomplete'],'bad.vcf')),/END:VCARD/);
+ await assert.rejects(readFile(new File(['BEGIN:VCARD\nFN:Test\nEND:VCARD\n'.repeat(201)],'large.vcf')),/200 contacts/);
+});
+
+test('phone picker imports only chosen details and retains multiple numbers', () => {
+ const {selectedContactDrafts}=fixture().load('lib/contact-import.ts');
+ const drafts=selectedContactDrafts([{name:[' Ada '],tel:['+234 100','+234 101','+234 100'],email:['a@example.test'],photo:'ignore'}]);
+ assert.equal(drafts[0].name,'Ada');
+ assert.deepEqual(drafts[0].fields,{Phone:'+234 100','Phone 2':'+234 101',Email:'a@example.test'});
+ assert.deepEqual(fixture().load('lib/people.ts').normalizeFields(drafts[0].fields),drafts[0].fields);
+ assert.equal(drafts[0].notes,'');
+});
