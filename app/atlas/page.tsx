@@ -10,5 +10,5 @@ export default async function Atlas(){
  if(!user)redirect('/login');
  const policies=accountPolicies();
  if(policies&&user.app_metadata?.atlas_policy_version!==policies.version)redirect('/account/policies');
- return <PeopleWorkspace unsplashEnabled={!!process.env.UNSPLASH_ACCESS_KEY?.trim()} accountDeletion={process.env.ATLAS_ACCOUNT_DELETION_ENABLED==='true'} signInHref="/login" tourScope={user.id} appGoogleClientId={googleConnection().googleClientId}/>;
+ return <PeopleWorkspace unsplashEnabled={!!process.env.UNSPLASH_ACCESS_KEY?.trim()} signInHref="/login" tourScope={user.id} appGoogleClientId={googleConnection().googleClientId}/>;
 }

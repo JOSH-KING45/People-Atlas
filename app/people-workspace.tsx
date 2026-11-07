@@ -126,4 +126,4 @@ function WorkspaceBody({signInHref,guest=false,tourScope="guest",appGoogleClient
  </SidebarProvider>
 }
 
-export default function PeopleWorkspace(props:{signInHref:string;guest?:boolean;tourScope?:string;appGoogleClientId?:string;accountDeletion?:boolean;unsplashEnabled?:boolean}){return <PersonalizationProvider guest={!!props.guest} accountDeletion={props.accountDeletion} unsplashEnabled={props.unsplashEnabled}><WorkspaceBody {...props}/></PersonalizationProvider>}
+export default function PeopleWorkspace(props:{signInHref:string;guest?:boolean;tourScope?:string;appGoogleClientId?:string;unsplashEnabled?:boolean}){return <PersonalizationProvider guest={!!props.guest} unsplashEnabled={props.unsplashEnabled}><WorkspaceBody {...props}/></PersonalizationProvider>}
