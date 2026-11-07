@@ -1,21 +1,22 @@
-/* The offline cache contains only the anonymous Guest shell and public build files. */
+/* The offline cache contains only public workspace shells and build files. */
 const CACHE = 'people-atlas-guest-shell-v1';
 const GUEST = '/guest';
-let preparation;
+const OFFLINE_ATLAS = '/offline-atlas';
+const preparations = new Map();
 
 function isBuildAsset(url) {
   return url.origin === self.location.origin && url.pathname.startsWith('/_next/static/');
 }
 
-async function prepareGuest() {
-  const response = await fetch(GUEST, {
+async function prepareShell(path) {
+  const response = await fetch(path, {
     credentials: 'omit',
     cache: 'no-store',
     redirect: 'error',
     headers: { Accept: 'text/html' },
   });
   if (!response.ok || !response.headers.get('content-type')?.includes('text/html')) {
-    throw new Error('Guest workspace could not be downloaded.');
+    throw new Error('Offline workspace could not be downloaded.');
   }
 
   const html = await response.clone().text();
@@ -24,7 +25,7 @@ async function prepareGuest() {
     const url = new URL(match[1], self.location.origin);
     if (isBuildAsset(url)) assets.add(url.href);
   }
-  if (!assets.size) throw new Error('Guest workspace assets could not be found.');
+  if (!assets.size) throw new Error('Offline workspace assets could not be found.');
 
   const cache = await caches.open(CACHE);
   const missing = (await Promise.all([...assets].map(async url => {
@@ -32,7 +33,7 @@ async function prepareGuest() {
   }))).filter(Boolean);
   await cache.addAll(missing);
   // Keep the previous shell usable if any of the new files fails to download.
-  await cache.put(GUEST, response);
+  await cache.put(path, response);
 }
 
 self.addEventListener('install', event => {
@@ -44,13 +45,18 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('message', event => {
-  if (event.data !== 'prepare-guest' || !event.source ||
-      new URL(event.source.url).pathname !== GUEST || !event.ports[0]) return;
+  if (!event.source || !event.ports[0]) return;
+  const source = new URL(event.source.url).pathname;
+  const path = event.data === 'prepare-guest' && source === GUEST ? GUEST :
+    event.data === 'prepare-offline-atlas' && source === '/atlas' ? OFFLINE_ATLAS : null;
+  if (!path) return;
   const reply = event.ports[0];
-  preparation ??= prepareGuest().finally(() => { preparation = undefined; });
-  event.waitUntil(preparation.then(
+  if (!preparations.has(path)) {
+    preparations.set(path, prepareShell(path).finally(() => preparations.delete(path)));
+  }
+  event.waitUntil(preparations.get(path).then(
     () => reply.postMessage(true),
-    async () => reply.postMessage(Boolean(await caches.match(GUEST, { cacheName: CACHE }))),
+    async () => reply.postMessage(Boolean(await caches.match(path, { cacheName: CACHE }))),
   ));
 });
 
@@ -60,11 +66,19 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  if (request.mode === 'navigate' && (url.pathname === GUEST || url.pathname === '/')) {
+  if (request.mode === 'navigate' && [GUEST, '/', '/atlas', OFFLINE_ATLAS].includes(url.pathname)) {
     event.respondWith(fetch(request).catch(async () => {
-      const guest = await caches.match(GUEST, { cacheName: CACHE });
-      if (!guest) return Response.error();
-      return url.pathname === GUEST ? guest : Response.redirect(new URL(GUEST, url.origin), 302);
+      const cache = await caches.open(CACHE);
+      if (url.pathname === '/') {
+        for (const path of [OFFLINE_ATLAS, GUEST]) {
+          if (await cache.match(path)) return Response.redirect(new URL(path, url.origin), 302);
+        }
+        return Response.error();
+      }
+      const path = url.pathname === '/atlas' ? OFFLINE_ATLAS : url.pathname;
+      const shell = await cache.match(path);
+      if (!shell) return Response.error();
+      return path === url.pathname ? shell : Response.redirect(new URL(path, url.origin), 302);
     }));
   } else if (isBuildAsset(url)) {
     event.respondWith(caches.match(request, { cacheName: CACHE }).then(cached => cached || fetch(request)));

@@ -8,6 +8,8 @@ type ProfileRow = {id:string;name:string;fields:Record<string,string>;notes:stri
 function unpack(r:ProfileRow){return{id:r.id,name:r.name,fields:r.fields,notes:r.notes,createdAt:r.created_at,updatedAt:r.updated_at,version:r.version}}
 export function GET(request:Request){return api(async()=>{
  const u=await owner(),cursor=afterId(request);
+ const expectedOwner=request?.headers.get('x-atlas-offline-owner') ?? null;
+ if(expectedOwner!==null&&expectedOwner!==u)throw new ApiError(409,'The signed-in account changed. Reload Atlas before saving an offline copy.');
  let query=adminClient().from('people').select('*').eq('owner',u).order('id').limit(pageSize+1);
  if(cursor)query=query.gt('id',cursor);
  const {data,error}=await query;
