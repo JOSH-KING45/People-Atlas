@@ -15,5 +15,5 @@ export default async function Login({searchParams}:{searchParams:Promise<{status
  {policies&&<AccountPolicyCheckbox policies={policies}/>}
  <button className="primary-button spaced" name="action" value="login">Sign in</button>
  <button className="outline-button spaced" name="action" value="register">Create account</button></form>
- <a href="/guest">Continue as guest</a></section></main>;
+ <a href="/guest">Continue as guest</a><p><a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms of Use</a></p></section></main>;
 }

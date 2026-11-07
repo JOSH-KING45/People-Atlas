@@ -46,6 +46,6 @@ export default function Landing({signedIn=false}:{signedIn?:boolean}){
    </div></section>
    <section className={styles.finalCta}><p className={styles.eyebrow}>GOOD CONNECTIONS START WITH PAYING ATTENTION.</p><h2>Make a little space<br/>for your people.</h2><a className={styles.primary} href="/guest">Open your notebook <ArrowRight size={18} aria-hidden="true"/></a></section>
   </main>
-  <footer className={styles.footer}><Link className={styles.brand} href="/"><Network size={20} aria-hidden="true"/>People Atlas</Link><p>Every person is more than a name.</p><a href="/login">Sign in <ArrowRight size={15} aria-hidden="true"/></a></footer>
+  <footer className={styles.footer}><Link className={styles.brand} href="/"><Network size={20} aria-hidden="true"/>People Atlas</Link><p>Every person is more than a name.</p><nav aria-label="Legal"><Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Use</Link></nav><a href="/login">Sign in <ArrowRight size={15} aria-hidden="true"/></a></footer>
  </div>;
 }

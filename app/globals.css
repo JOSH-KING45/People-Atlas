@@ -280,3 +280,15 @@ h2,.profile-section h3,.profile-history h3{font-weight:600}
   margin-block: 12px;
 }
 .account-policy-check input { margin-top: 4px; }
+
+.atlas-legal {
+  max-width: 48rem;
+  margin-inline: auto;
+  padding: clamp(1.25rem, 5vw, 3rem);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.atlas-legal h1 { font-size: 2rem; margin-block: 1rem; }
+.atlas-legal h2 { font-size: 1.2rem; margin-block: 1.25rem 0.5rem; }
+.atlas-legal p { margin-block: 0.75rem; }
+.atlas-legal a { text-decoration: underline; text-underline-offset: 0.15em; }

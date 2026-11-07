@@ -23,7 +23,12 @@ test('recognized identity opens the workspace and uses the stable ID for ownersh
   const home=await f.load('app/page.tsx').default();
   assert.equal(home.props.signedIn,true);
   assert.notEqual(home.type,f.Workspace);
-  assert.equal((await f.load('app/atlas/page.tsx').default()).type,f.Workspace);
+  const originalGetUser=f.auth.getUser;
+  const atlas=f.load('app/atlas/page.tsx').default;
+  await assert.rejects(atlas(), /Redirect: \/account\/policies/);
+  f.auth.getUser=async()=>({data:{user:{id:'test-user-a',app_metadata:{atlas_policy_version:'2026-11-07'}}}});
+  assert.equal((await atlas()).type,f.Workspace);
+  f.auth.getUser=originalGetUser;
   const markup=renderToStaticMarkup(home);
   assert.match(markup,/Continue to Atlas/);
   assert.match(markup,/Stay on this page/);
