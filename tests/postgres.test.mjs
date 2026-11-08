@@ -10,7 +10,7 @@ test('migrations enforce PostgreSQL ownership, partial conflicts, atomic rollbac
   create function auth.uid() returns uuid language sql as $$select current_setting('test.uid',true)::uuid$$;
   grant usage on schema auth to authenticated;
   create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);`);
- for(const migration of ['202611030001_atlas','202611030002_storage','202611030003_ai_quota','20261104002300_atlas_personalization','20261104014115_atlas_speech_limits','20261107113542_atlas_upload_deletion_fence'])
+ for(const migration of ['202611030001_atlas','202611030002_storage','202611030003_ai_quota','20261104002300_atlas_personalization','20261104014115_atlas_speech_limits','20261107113542_atlas_upload_deletion_fence','20261108150000_atlas_tasks'])
   await pg.exec(await readFile(new URL('../supabase/migrations/'+migration+'.sql',import.meta.url),'utf8'));
  await pg.query('insert into auth.users values ($1),($2)',[a,b]);
  const save=async(owner,rows)=>(await pg.query('select * from public.atlas_save_people($1,$2)',[owner,JSON.stringify(rows)])).rows;
@@ -65,8 +65,17 @@ test('migrations enforce PostgreSQL ownership, partial conflicts, atomic rollbac
  await assert.rejects(transition(a,'delete'));
  await assert.rejects(pg.query('select * from atlas_upload_fence'));
  await pg.exec('reset role');
+ const task=crypto.randomUUID();
+ await pg.query("insert into atlas_tasks(id,owner,person_id,title,kind,google_event_id) values($1,$2,$3,'Follow up','task','event')",[task,a,id]);
+ await assert.rejects(pg.query("insert into atlas_tasks(id,owner,person_id,title,kind) values($1,$2,$3,'Other profile','task')",[crypto.randomUUID(),b,id]),{code:'23503'});
+ await assert.rejects(pg.query("insert into atlas_tasks(id,owner,title,kind,google_event_id) values($1,$2,'Duplicate','task','event')",[crypto.randomUUID(),a]),{code:'23505'});
+ await pg.exec('set role authenticated');
+ await assert.rejects(pg.query('select * from atlas_tasks'),{code:'42501'});
+ await pg.exec('reset role');
+ await pg.query('delete from people where id=$1',[id]);
+ assert.equal((await pg.query('select person_id from atlas_tasks where id=$1',[task])).rows[0].person_id,null);
  await pg.query('delete from auth.users where id=$1',[a]);
- for(const table of ['atlas_upload_fence','people','sources','settings','atlas_preferences']){
+ for(const table of ['atlas_upload_fence','people','sources','settings','atlas_preferences','atlas_tasks']){
   assert.deepEqual((await pg.query('select owner from '+table+' where owner=$1',[a])).rows,[]);
  }
  assert.equal(bucket.public,false);assert.equal(Number(bucket.file_size_limit),15*1024*1024);

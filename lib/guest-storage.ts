@@ -1,20 +1,21 @@
 "use client";
 import type {Person,Source} from './people';
+import {taskDraft,taskDelete,type Task} from './tasks';
 import {newPersonId,normalizeFields,parseText} from './people';
 
 const DB_NAME='people-atlas-guest';
-const DB_VERSION=1;
+const DB_VERSION=2;
 const DEFAULT_SETTINGS={googleClientId:'',hasAiKey:false,aiModel:'openrouter/free',aiProvider:'openrouter'};
 type StoredSource=Source&{blob:Blob};
 
 function database(){
  return new Promise<IDBDatabase>((resolve,reject)=>{
   const request=indexedDB.open(DB_NAME,DB_VERSION);
-  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('people'))db.createObjectStore('people',{keyPath:'id'});if(!db.objectStoreNames.contains('sources'))db.createObjectStore('sources',{keyPath:'id'});if(!db.objectStoreNames.contains('settings'))db.createObjectStore('settings',{keyPath:'key'})};
+  request.onupgradeneeded=()=>{const db=request.result;if(!db.objectStoreNames.contains('people'))db.createObjectStore('people',{keyPath:'id'});if(!db.objectStoreNames.contains('sources'))db.createObjectStore('sources',{keyPath:'id'});if(!db.objectStoreNames.contains('tasks'))db.createObjectStore('tasks',{keyPath:'id'});if(!db.objectStoreNames.contains('settings'))db.createObjectStore('settings',{keyPath:'key'})};
   request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error||new Error('Guest storage could not open.'));
  });
 }
-async function transaction<T>(storeName:'people'|'sources'|'settings',mode:IDBTransactionMode,run:(store:IDBObjectStore,finish:(value:T)=>void,fail:(error:unknown)=>void)=>void){
+async function transaction<T>(storeName:'people'|'sources'|'settings'|'tasks',mode:IDBTransactionMode,run:(store:IDBObjectStore,finish:(value:T)=>void,fail:(error:unknown)=>void)=>void){
  const db=await database();return new Promise<T>((resolve,reject)=>{const tx=db.transaction(storeName,mode);const store=tx.objectStore(storeName);let result:T;let completed=false;const finish=(value:T)=>{result=value;completed=true};const fail=(error:unknown)=>reject(error);run(store,finish,fail);tx.oncomplete=()=>{db.close();if(completed)resolve(result)};tx.onerror=()=>{db.close();reject(tx.error||new Error('Guest storage failed.'))};tx.onabort=tx.onerror});
 }
 function requestResult<T>(request:IDBRequest<T>,finish:(value:T)=>void,fail:(error:unknown)=>void){request.onsuccess=()=>finish(request.result);request.onerror=()=>fail(request.error)}
@@ -27,6 +28,26 @@ export async function guestApiRequest(url:string,options?:RequestInit){
  }
  if(endpoint.pathname==='/api/preferences'&&method==='POST'){
   const input=body(options);return transaction<any>('settings','readwrite',(store,finish,fail)=>{const get=store.get('preferences');get.onerror=()=>fail(get.error);get.onsuccess=()=>{const value={...(get.result?.value||{}),[input.key]:input.value};requestResult(store.put({key:'preferences',value}),()=>finish(input),fail)}});
+ }
+ if(endpoint.pathname==='/api/tasks'){
+  if(method==='GET')return{tasks:await transaction<Task[]>('tasks','readonly',(store,finish,fail)=>requestResult(store.getAll(),finish,fail))};
+  if(method==='POST'){
+   const item=taskDraft.parse(body(options));
+   return transaction<{task:Task}>('tasks','readwrite',(store,finish,fail)=>requestResult(store.getAll(),(items:Task[])=>{
+    const old=items.find(t=>t.id===item.id);
+    if(old?.version!==item.version){fail(new Error('This item changed. Reload your tasks and try again.'));return}
+    if(!old&&item.googleEventId&&items.some(t=>t.googleEventId===item.googleEventId)){fail(new Error('This calendar event was already imported.'));return}
+    const task={...item,googleEventId:old?old.googleEventId:item.googleEventId,version:(old?.version||0)+1};
+    requestResult(store.put(task),()=>finish({task}),fail);
+   },fail));
+  }
+  if(method==='DELETE'){
+   const item=taskDelete.parse(body(options));
+   return transaction<{deleted:string}>('tasks','readwrite',(store,finish,fail)=>requestResult(store.get(item.id),(old:Task|undefined)=>{
+    if(old?.version!==item.version){fail(new Error('This item changed. Reload your tasks and try again.'));return}
+    requestResult(store.delete(item.id),()=>finish({deleted:item.id}),fail);
+   },fail));
+  }
  }
  if(endpoint.pathname==='/api/people'&&method==='GET'){
   const people=await transaction<Person[]>('people','readonly',(store,finish,fail)=>requestResult(store.getAll(),finish,fail));

@@ -23,7 +23,7 @@ export async function apiRequest(url:string,options?:RequestInit){
   return data;
 }
 
-export async function listRecords<T>(request:(url:string)=>Promise<Record<string,unknown>>,key:'people'|'sources'){
+export async function listRecords<T>(request:(url:string)=>Promise<Record<string,unknown>>,key:'people'|'sources'|'tasks'){
  const records:T[]=[];
  let after='';
  do{

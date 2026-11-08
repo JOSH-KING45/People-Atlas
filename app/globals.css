@@ -310,3 +310,12 @@ h2,.profile-section h3,.profile-history h3{font-weight:600}
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
+
+.atlas-tasks { margin-block: 1rem; }
+.atlas-tasks .section-heading, .atlas-tasks .action-row { flex-wrap: wrap; }
+.atlas-task-form { display: grid; gap: .75rem; margin-block: .75rem; }
+.atlas-task-form .field { margin: 0; }
+.atlas-task-form input, .atlas-task-form select { min-width: 0; width: 100%; }
+.atlas-task-list { list-style: none; padding: 0; margin: .75rem 0; display: grid; gap: .5rem; }
+.atlas-task-list li { border-block-start: 1px solid var(--border); padding-block: .65rem; overflow-wrap: anywhere; }
+.atlas-calendar-import { margin-block-start: 1rem; }
