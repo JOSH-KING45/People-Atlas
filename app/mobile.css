@@ -32,8 +32,12 @@
  [data-slot=sidebar][data-mobile=true] [data-slot=sidebar-footer]{flex-shrink:0}
  [data-slot=dialog-content]:not(.guided-tour){width:calc(100vw - 24px);padding:18px;gap:14px;min-width:0;scroll-padding:22px}
  [data-slot=dialog-content] [data-slot=dialog-header]{text-align:left;padding-right:25px}
- [data-slot=dialog-footer]{gap:9px;flex-wrap:wrap}[data-slot=dialog-footer]>button{min-height:44px;flex:1 1 140px}
- .review-dialog .review-scroll,.settings-dialog .settings-scroll{min-height:80px;flex:1;overflow-y:auto}
+ /* Stacked footers use an automatic flex basis so width rules cannot inflate button height. */
+ :is([data-slot=dialog-footer],[data-slot=alert-dialog-footer]){gap:9px;flex-wrap:wrap;flex-shrink:0}
+ :is([data-slot=dialog-footer],[data-slot=alert-dialog-footer])>button{min-height:44px;flex:0 0 auto}
+ .review-dialog .review-scroll,.settings-dialog .settings-scroll{flex:1;overflow-y:auto}
+ .review-dialog .review-scroll{min-height:80px}
+ .settings-dialog [data-slot=dialog-header]{flex-shrink:0}
  .review-guidance{max-height:20vh;overflow:auto;flex-shrink:0}.review-card{padding:14px}.review-actions{flex-shrink:0;gap:8px;padding-top:12px}
  .review-dialog .review-actions{flex-direction:row;align-items:stretch}
  .review-dialog .review-actions>span{flex:0 0 100%;margin:0}
