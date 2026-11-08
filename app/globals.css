@@ -252,7 +252,7 @@ h2,.profile-section h3,.profile-history h3{font-weight:600}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{translate:none!important;rotate:none!important;scale:none!important}}
 
-.personalized-shell{min-height:100svh}.has-wallpaper .atlas-home{background-image:linear-gradient(#f6f8fcc7,#f6f8fce8),var(--atlas-wallpaper);background-size:cover;background-position:center;background-repeat:no-repeat;min-height:calc(100svh - 72px)}.dark .has-wallpaper .atlas-home{background-image:linear-gradient(#101c30bb,#101c30e8),var(--atlas-wallpaper)}
+.personalized-shell{min-height:100svh}.has-wallpaper .workspace{background-image:linear-gradient(#f6f8fcc7,#f6f8fce8),var(--atlas-wallpaper);background-size:cover;background-position:center;background-repeat:no-repeat;min-height:100svh}.dark .has-wallpaper .workspace{background-image:linear-gradient(#101c30bb,#101c30e8),var(--atlas-wallpaper)}
 .profile-account-button{border:1px solid var(--border);padding:0;overflow:hidden;flex-shrink:0}.profile-account-button img,.person-avatar img{width:100%;height:100%;object-fit:cover}.person-avatar{overflow:hidden}.personalization-dialog{max-width:min(680px,calc(100vw - 32px))!important;max-height:90dvh;overflow-y:auto}.personalization-content section{padding:20px 0}.personalization-content section+section{border-top:1px solid var(--border)}.personalization-content h3{display:flex;align-items:center;gap:9px;font-weight:650;margin:0 0 18px}.personalization-content textarea{min-height:90px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--foreground)}.account-photo-row{display:flex;gap:18px;align-items:center;margin-bottom:20px}
 .account-photo-row > div {
   display: flex;
