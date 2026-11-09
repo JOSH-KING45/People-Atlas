@@ -16,7 +16,7 @@ export default function Landing({signedIn=false}:{signedIn?:boolean}){
     <div className={styles.intro}>
      <p className={styles.eyebrow}><span/> A little more thoughtful. A lot more connected.</p>
      <h1 id="hero-title">The people matter.<br/><em>Remember the details.</em></h1>
-     <p className={styles.lead}>A personal notebook for the people in your life. Turn scattered notes into thoughtful profiles, keep memories close, and make room for the details that make someone them.</p>
+     <p className={styles.lead}>A private contact notebook for the people in your life. Organize contacts and notes, remember birthdays, and keep track of follow-ups in one place.</p>
      <div className={styles.actions}><a className={styles.primary} href={signedIn?"/atlas":"/guest"}>{signedIn?"Continue to Atlas":"Start your people notebook"} <ArrowRight size={18} aria-hidden="true"/></a><a className={styles.secondary} href={signedIn?"/guest":"/login"}>{signedIn?"Explore as a guest":"Create an account"}</a><a className={styles.secondary} href="/downloads/People-Atlas-v1.1.0-test.apk" download>Download Android APK</a></div>
      <p className={styles.micro}><Check size={15} aria-hidden="true"/> Try guest mode without signing up</p>
     </div>

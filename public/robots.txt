@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mypeople.com.ng/sitemap.xml
