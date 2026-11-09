@@ -51,7 +51,7 @@ export function AtlasMonthCalendar({ people, profileDates, tasks, addDisabled, o
    add(dateKey(item.date), { id: item.person.id + '-' + item.label, title: item.label, detail: item.person.name });
   }
   for (const task of tasks) {
-   const date = task.dueAt ? new Date(task.dueAt) : null;
+   const date: Date | null = task.dueAt ? new Date(task.dueAt) : null;
    const key = date ? dateKey(date) : task.dueOn;
    if (!key) continue;
    const detail = [taskLabels[task.kind], task.googleEventId && 'Google Calendar', task.completed && 'Completed'].filter(Boolean).join(' · ');
