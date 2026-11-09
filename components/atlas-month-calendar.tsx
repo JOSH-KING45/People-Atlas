@@ -42,7 +42,7 @@ export function AtlasMonthCalendar({ people, profileDates, tasks, addDisabled, o
   for (const person of people) {
    const birthday = birthdayParts(person.fields.Birthday || '');
    if (!birthday || birthday.month !== month+1) continue;
-   const date = new Date(year, month, birthday.day);
+   const date: Date = new Date(year, month, birthday.day);
    if (date.getMonth() === month && (birthday.year === undefined || year >= birthday.year)) {
     add(dateKey(date), { id: 'birthday-' + person.id, title: person.name + '’s birthday', detail: 'Birthday' });
    }
