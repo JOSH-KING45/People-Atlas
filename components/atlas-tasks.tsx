@@ -1,20 +1,24 @@
 'use client';
-import {useEffect,useState,type FormEvent} from 'react';
+import {useEffect,useRef,useState,type FormEvent} from 'react';
 import {newPersonId,type Person} from '@/lib/people';
 import {taskDraft,taskTime,type Task,type TaskDraft,type TaskKind} from '@/lib/tasks';
 import {listRecords} from '@/lib/api-client';
 import {authorizeGoogle} from '@/lib/calendar';
 import {GOOGLE_CALENDAR_READ_SCOPE,readGoogleCalendar,type CalendarImportEvent} from '@/lib/google-calendar-import';
 
+import {AtlasMonthCalendar,type ProfileDate} from './atlas-month-calendar';
+
 const labels:Record<TaskKind,string>={task:'Task',reminder:'Reminder',date:'Important date'};
 const localDate=(date:Date)=>new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);
 const blank=(personId:string|null=null):TaskDraft=>({id:newPersonId(),title:'',personId,kind:'task',dueOn:null,dueAt:null,completed:false,googleEventId:null});
 const submitOptions=(method:string,data:unknown)=>({method,headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
 
-export function AtlasTasks({people,request,profileId,googleClientId,googleReady,showImport}:{
+export function AtlasTasks({people,request,profileId,googleClientId,googleReady,showImport,profileDates}:{
  people:Person[];request:(url:string,options?:RequestInit)=>Promise<Record<string,unknown>>;
- profileId:string|null;googleClientId:string;googleReady:boolean;showImport:boolean;
+ profileId:string|null;googleClientId:string;googleReady:boolean;showImport:boolean;profileDates:ProfileDate[];
 }){
+ const formTitle=useRef<HTMLInputElement>(null);
+ const focusDatedDraft=useRef(false);
  const [tasks,setTasks]=useState<Task[]>([]);
  const [draft,setDraft]=useState<TaskDraft|null>(null);
  const [busy,setBusy]=useState(false);
@@ -42,6 +46,13 @@ export function AtlasTasks({people,request,profileId,googleClientId,googleReady,
  useEffect(()=>{
   if(profileId)setDraft({...blank(profileId)});
  },[profileId]);
+
+ useEffect(()=>{
+  if(draft&&focusDatedDraft.current){
+   focusDatedDraft.current=false;
+   formTitle.current?.focus();
+  }
+ },[draft]);
 
  const save=async(item:TaskDraft)=>{
   const parsed=taskDraft.safeParse(item);
@@ -90,15 +101,23 @@ export function AtlasTasks({people,request,profileId,googleClientId,googleReady,
  const visible=tasks.filter(t=>t.completed===completed).sort((a,b)=>taskTime(a)-taskTime(b)||a.title.localeCompare(b.title));
  const profileOptions=people.map(person=><option key={person.id} value={person.id}>{person.name}</option>);
 
- return <section className="panel atlas-tasks" aria-labelledby="atlas-tasks-title">
+ return <>
+ {showImport&&<AtlasMonthCalendar people={people} profileDates={profileDates} tasks={tasks}
+  addDisabled={loading||busy||!!draft} onAdd={date=>{focusDatedDraft.current=true;setDraft({...blank(),dueOn:date})}}/>}
+ <section className="panel atlas-tasks" aria-labelledby="atlas-tasks-title">
   <div className="section-heading"><h2 id="atlas-tasks-title">Tasks &amp; reminders</h2>
    <button className="outline-button" disabled={loading||busy} onClick={()=>setDraft(blank())}>Add task or reminder</button>
   </div>
   {error&&<p className="error-banner" role="alert">{error}</p>}
   {message&&<p role="status">{message}</p>}
   {draft&&<form className="atlas-task-form" onSubmit={saveForm}>
-   <label className="field">Title<input required maxLength={200} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
-   <label className="field">Type<select value={draft.kind} onChange={e=>setDraft({...draft,kind:e.target.value as TaskKind,dueOn:null,dueAt:null})}>
+   <label className="field">Title<input ref={formTitle} required maxLength={200} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
+   <label className="field">Type<select value={draft.kind} onChange={e=>{
+    const kind=e.target.value as TaskKind;
+    const date=draft.dueOn ?? (draft.dueAt ? localDate(new Date(draft.dueAt)).slice(0,10) : null);
+    const dueAt=kind==='reminder' ? draft.dueAt ?? (date ? new Date(date+'T09:00:00').toISOString() : null) : null;
+    setDraft({...draft,kind,dueOn:kind==='reminder'?null:date,dueAt});
+   }}>
     {Object.entries(labels).map(([key,label])=><option value={key} key={key}>{label}</option>)}
    </select></label>
    <label className="field">Profile<select value={draft.personId??''} onChange={e=>setDraft({...draft,personId:e.target.value||null})}>
@@ -159,5 +178,6 @@ export function AtlasTasks({people,request,profileId,googleClientId,googleReady,
     </>}
    </>}
   </div>}
- </section>;
+ </section>
+ </>;
 }
