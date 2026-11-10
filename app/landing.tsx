@@ -19,6 +19,7 @@ export default function Landing({signedIn=false}:{signedIn?:boolean}){
      <p className={styles.lead}>A private contact notebook for the people in your life. Organize contacts and notes, remember birthdays, and keep track of follow-ups in one place.</p>
      <div className={styles.actions}><a className={styles.primary} href={signedIn?"/atlas":"/guest"}>{signedIn?"Continue to Atlas":"Start your people notebook"} <ArrowRight size={18} aria-hidden="true"/></a><a className={styles.secondary} href={signedIn?"/guest":"/login"}>{signedIn?"Explore as a guest":"Create an account"}</a><a className={styles.secondary} href="/downloads/People-Atlas-v1.1.0-test.apk" download>Download Android APK</a></div>
      <p className={styles.micro}><Check size={15} aria-hidden="true"/> Try guest mode without signing up</p>
+     <p className={styles.micro}>Wanna find out more about the dev? <a href="https://joshua-japhet.vercel.app/" target="_blank" rel="noopener noreferrer" style={{textDecoration:"underline",textUnderlineOffset:3}}>Click here</a>.</p>
     </div>
     <div className={styles.preview} aria-label="Illustrative example of turning a note into a profile">
      <div className={styles.previewTop}><span><Network size={17} aria-hidden="true"/> Your people, in perspective</span><span className={styles.demo}>Example</span></div>
@@ -46,6 +47,6 @@ export default function Landing({signedIn=false}:{signedIn?:boolean}){
    </div></section>
    <section className={styles.finalCta}><p className={styles.eyebrow}>GOOD CONNECTIONS START WITH PAYING ATTENTION.</p><h2>Make a little space<br/>for your people.</h2><a className={styles.primary} href="/guest">Open your notebook <ArrowRight size={18} aria-hidden="true"/></a></section>
   </main>
-  <footer className={styles.footer}><Link className={styles.brand} href="/"><Network size={20} aria-hidden="true"/>People Atlas</Link><p>Every person is more than a name.</p><nav aria-label="Legal"><Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Use</Link></nav><a href="/login">Sign in <ArrowRight size={15} aria-hidden="true"/></a></footer>
+  <footer className={styles.footer}><Link className={styles.brand} href="/"><Network size={20} aria-hidden="true"/>People Atlas</Link><p>Every person is more than a name.</p><nav aria-label="Legal"><Link href="/about">About</Link> · <Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Use</Link></nav><a href="/login">Sign in <ArrowRight size={15} aria-hidden="true"/></a></footer>
  </div>;
 }
