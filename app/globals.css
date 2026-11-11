@@ -319,3 +319,19 @@ h2,.profile-section h3,.profile-history h3{font-weight:600}
 .atlas-task-list { list-style: none; padding: 0; margin: .75rem 0; display: grid; gap: .5rem; }
 .atlas-task-list li { border-block-start: 1px solid var(--border); padding-block: .65rem; overflow-wrap: anywhere; }
 .atlas-calendar-import { margin-block-start: 1rem; }
+
+.atlas-tasks-heading { align-items: center; }
+.atlas-tasks-toggle {
+  display: inline-flex; align-items: center; gap: .55rem; min-height: 44px;
+  padding: 0; border: 0; background: transparent; color: inherit;
+  font: inherit; font-weight: 650; text-align: left; cursor: pointer;
+}
+.atlas-task-count {
+  display: inline-grid; place-items: center; min-width: 1.45rem; height: 1.45rem;
+  padding-inline: .35rem; border-radius: 999px; background: var(--primary);
+  color: white; font-size: .78rem; line-height: 1; font-weight: 700;
+}
+.atlas-tasks-chevron { display: inline-block; font-size: 1.25rem; transition: transform .18s ease; }
+.atlas-tasks-chevron.is-open { transform: rotate(180deg); }
+.atlas-tasks-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 4px; border-radius: .25rem; }
+@media (prefers-reduced-motion: reduce) { .atlas-tasks-chevron { transition: none; } }
