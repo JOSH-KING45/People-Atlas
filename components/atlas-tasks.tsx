@@ -26,6 +26,7 @@ export function AtlasTasks({people,request,profileId,googleClientId,googleReady,
  const [error,setError]=useState('');
  const [now,setNow]=useState(Date.now);
  const [completed,setCompleted]=useState(false);
+ const [expanded,setExpanded]=useState(false);
  const [importOpen,setImportOpen]=useState(false);
  const [events,setEvents]=useState<CalendarImportEvent[]|null>(null);
  const [selection,setSelection]=useState<string[]>([]);
@@ -99,15 +100,22 @@ export function AtlasTasks({people,request,profileId,googleClientId,googleReady,
   }finally{if(count)setMessage(`Imported ${count} calendar event${count===1?'':'s'}.`)}
  });
  const visible=tasks.filter(t=>t.completed===completed).sort((a,b)=>taskTime(a)-taskTime(b)||a.title.localeCompare(b.title));
+ const activeTaskCount=tasks.filter(t=>!t.completed).length;
  const profileOptions=people.map(person=><option key={person.id} value={person.id}>{person.name}</option>);
 
  return <>
  {showImport&&<AtlasMonthCalendar people={people} profileDates={profileDates} tasks={tasks}
   addDisabled={loading||busy||!!draft} onAdd={date=>{focusDatedDraft.current=true;setDraft({...blank(),dueOn:date})}}/>}
  <section className="panel atlas-tasks" aria-labelledby="atlas-tasks-title">
-  <div className="section-heading"><h2 id="atlas-tasks-title">Tasks &amp; reminders</h2>
-   <button className="outline-button" disabled={loading||busy} onClick={()=>setDraft(blank())}>Add task or reminder</button>
+  <div className="section-heading atlas-tasks-heading">
+   <button type="button" className="atlas-tasks-toggle" aria-expanded={expanded} aria-controls="atlas-tasks-content" onClick={()=>setExpanded(open=>!open)}>
+    <span id="atlas-tasks-title">Tasks &amp; reminders</span>
+    {activeTaskCount>0&&<span className="atlas-task-count" aria-label={`${activeTaskCount} active tasks`}>{activeTaskCount}</span>}
+    <span className={`atlas-tasks-chevron${expanded?' is-open':''}`} aria-hidden="true">⌄</span>
+   </button>
+   <button className="outline-button" disabled={loading||busy} onClick={()=>{setExpanded(true);setDraft(blank())}}>Add task or reminder</button>
   </div>
+  <div id="atlas-tasks-content" hidden={!expanded}>
   {error&&<p className="error-banner" role="alert">{error}</p>}
   {message&&<p role="status">{message}</p>}
   {draft&&<form className="atlas-task-form" onSubmit={saveForm}>
@@ -178,6 +186,7 @@ export function AtlasTasks({people,request,profileId,googleClientId,googleReady,
     </>}
    </>}
   </div>}
+  </div>
  </section>
  </>;
 }
